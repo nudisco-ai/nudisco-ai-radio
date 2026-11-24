@@ -4,13 +4,13 @@ html {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-si
 body.astra-app {min-height:100dvh;background:radial-gradient(ellipse at 50% 8%,#291b3e 0,var(--bg) 52%);padding:env(safe-area-inset-top,0) 0 calc(88px + env(safe-area-inset-bottom,0));line-height:1.45;}
 .app-header,.app-main {width:min(100% - 40px,480px);margin:auto;}
 .app-header {display:flex;justify-content:space-between;align-items:center;padding:19px 0 15px;gap:16px;}
-.eyebrow {font-size:.68rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;}
+.eyebrow {font-size:.68rem;letter-spacing:.14em;color:var(--muted);text-transform:none;display:block;margin-bottom:4px;}
 .app-header h1 {font-size:1.16rem;font-weight:650;letter-spacing:-.035em;}
 .round {border:1px solid var(--line);background:#261b35;border-radius:50%;width:44px;height:44px;color:var(--signal);font-size:1.4rem;display:grid;place-content:center;flex:none;}
 .art {margin:3px auto 20px;width:min(100%,330px);border-radius:26px;overflow:hidden;background:radial-gradient(ellipse,#42275a,#1b1429);box-shadow:0 16px 44px #07040d70;}
 .art img {display:block;width:100%;height:auto;}
 .now-top {display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.state {margin:0;font-size:.72rem;letter-spacing:.065em;text-transform:uppercase;}
+.state {margin:0;font-size:.72rem;letter-spacing:.065em;text-transform:none;}
 .state::before {border-radius:50%;}
 .favorite {border:0;background:transparent;font-size:1.85rem;}
 .favorite[aria-pressed=true] {color:#e99edc;}

@@ -50,7 +50,7 @@
     b.addEventListener('click', () => select(item));
     const heart = document.createElement('button'); heart.type = 'button'; heart.className = 'round favorite';
     const active = favorites.has(item.id); heart.textContent = active ? '♥' : '♡'; heart.setAttribute('aria-pressed', String(active));
-    heart.setAttribute('aria-label', (active ? 'Remove favorite: ' : 'Save favorite: ') + item.title);
+    heart.setAttribute('aria-label', (active ? 'remove favorite: ' : 'save favorite: ') + item.title);
     heart.addEventListener('click', () => toggleFavorite(item.id)); li.append(b, heart); return li;
   }
   function renderLists() {
