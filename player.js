@@ -10,9 +10,12 @@ const noticeWords = "there is difficult material attached to this post. you can 
 const friendshipWords = "you're listening to nudisco ai radio. remember that friendship is magic.";
 const longReadingSeconds = 180;
 const minimumFeatureSpacing = 4;
+const customBreakId = /^custom-[a-f0-9]{32}$/;
+const customExcerptId = /^custom-[a-f0-9]{32}(?:-audio)?$/;
 const segmentNames = {
   station_intro: "station introduction", post_intro: "post introduction", post: "nudisco ai reading",
-  attachment_notice: "attachment notice", intermission: "intermission", feature_intermission: "extended intermission", short_id: "station identification", music: "intermission · music"
+  attachment_notice: "attachment notice", intermission: "intermission", feature_intermission: "extended intermission",
+  audio_excerpt: "intermission · audio excerpt", short_id: "station identification", music: "intermission · music"
 };
 let program;
 let current;
@@ -39,6 +42,63 @@ let lastBreak = 0;
 let lastAnnouncement = 0;
 let breakNumber = 0;
 let featureNumber = 0;
+let readingSecondsSinceFeature = 0;
+let readingSecondsSinceBreak = 0;
+let mixedSlot = 0;
+let classicSlot = 0;
+let mixBags = null;
+
+// A shuffle bag plays each member once before repeating it. Separate bags
+// preserve the original short IDs/features while giving a large custom library
+// more airtime. No post order, transcript, recording or music is changed.
+function makeBag(items) {
+  let queue = [], previous = null;
+  return () => {
+    if (!items.length) return null;
+    if (!queue.length) {
+      queue = items.slice();
+      for (let i = queue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [queue[i], queue[j]] = [queue[j], queue[i]];
+      }
+      if (queue.length > 1 && queue[0].id === previous) {
+        [queue[0], queue[1]] = [queue[1], queue[0]];
+      }
+    }
+    const item = queue.shift();
+    previous = item.id;
+    return item;
+  };
+}
+
+function setupMixedRotation() {
+  const custom = program.breaks.filter(t => t.id.startsWith("custom-"));
+  if (custom.length < 4) return; // leave a small station's usual cadence intact
+  mixBags = {
+    custom: makeBag(custom),
+    station: makeBag(program.breaks.filter(t => !t.id.startsWith("custom-"))),
+    feature: makeBag(program.features)
+  };
+}
+
+function mixedIntermission(duration, sinceBreak, cadence) {
+  readingSecondsSinceBreak += duration;
+  // First custom segment: after two posts or one substantial reading.
+  // Later: usually three posts, or two totaling at least three minutes.
+  const postsNeeded = Math.min(cadence, mixedSlot === 0 ? 2 : 3);
+  const earned = sinceBreak >= Math.min(2, postsNeeded) && readingSecondsSinceBreak >= longReadingSeconds;
+  if (!(sinceBreak >= postsNeeded || earned || (mixedSlot === 0 && duration >= longReadingSeconds))) return null;
+  let selected;
+  if (mixedSlot++ % 4 === 3) {
+    // Every fourth break is a classic, alternating station copy and the
+    // original longer features. Fall back gracefully if either pool is empty.
+    const stationFirst = classicSlot++ % 2 === 0;
+    selected = stationFirst ? mixBags.station() || mixBags.feature() : mixBags.feature() || mixBags.station();
+  }
+  readingSecondsSinceBreak = 0;
+  return selected || mixBags.custom();
+}
+
 
 function clock(seconds) {
   const total = Math.max(0, Math.floor(seconds));
@@ -73,6 +133,8 @@ function parseProgram(manifest) {
   const groups = new Map(Object.keys(segmentNames).map(kind => [kind, []]));
   const intros = new Map();
   const notices = new Map();
+  const excerpts = new Map();
+  const requestedExcerpts = new Set();
   for (const track of tracks) {
     check(track && Object.hasOwn(segmentNames, track.kind) && typeof track.id === "string" &&
       !seen.has(track.id) && Number.isFinite(track.duration) && track.duration > 0 &&
@@ -85,17 +147,33 @@ function parseProgram(manifest) {
       index.set(track.post_id, track);
     }
     if (track.kind === "music") check(track.id === "lofi-nudisco" && (track.title === musicTitle || track.title === "lofi nudisco") && track.duration === 9);
+    if (track.id.startsWith("custom-") || track.kind === "audio_excerpt" || Object.hasOwn(track, "excerpt_id")) {
+      check(typeof track.title === "string" && track.title.trim() &&
+        (track.credit === undefined || typeof track.credit === "string") && track.source_url == null);
+      if (track.kind === "audio_excerpt") {
+        check(customExcerptId.test(track.id) && track.duration === 9 && !Object.hasOwn(track, "excerpt_id"));
+        excerpts.set(track.id, track);
+      } else {
+        check(track.kind === "intermission" && customBreakId.test(track.id));
+        if (Object.hasOwn(track, "excerpt_id")) {
+          check(track.excerpt_id === track.id + "-audio");
+          requestedExcerpts.add(track.excerpt_id);
+        }
+      }
+    }
     if (track.kind === "post" || track.kind === "post_intro") {
       check(track.edition === "regular" && validPostLink(track));
       check(!track.date || shortDate(track.date));
     }
     if (track.kind === "attachment_notice") check(track.edition === "regular" && validPostLink(track) && track.announcement_text === noticeWords);
     if (track.kind === "post") check(typeof track.authored_text === "string" && track.authored_text.trim());
-    else if (track.kind !== "music") check(typeof track.announcement_text === "string" && track.announcement_text.trim());
+    else if (track.kind !== "music" && track.kind !== "audio_excerpt") check(typeof track.announcement_text === "string" && track.announcement_text.trim());
   }
+  for (const id of requestedExcerpts) check(excerpts.has(id));
+  for (const id of excerpts.keys()) check(!id.endsWith("-audio") || requestedExcerpts.has(id));
   const stations = groups.get("station_intro");
   const bodies = groups.get("post");
-  const breaks = groups.get("intermission");
+  const breaks = tracks.filter(t => t.kind === "intermission" || (t.kind === "audio_excerpt" && !requestedExcerpts.has(t.id)));
   const shortIds = groups.get("short_id");
   const music = groups.get("music");
   check(stations.length === 1 && stations[0].announcement_text.startsWith(openingWords));
@@ -119,9 +197,11 @@ function parseProgram(manifest) {
   const cadence = manifest.program ?? {break_every: 4, short_id_every: 0};
   for (const key of ["break_every", "short_id_every"])
     check(Number.isInteger(cadence[key]) && cadence[key] >= 0);
+  if (cadence.feature_after_reading_seconds !== undefined)
+    check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
   return {opening:stations[0], posts, breaks, features:groups.get("feature_intermission"),
-    shortId:shortIds[0], music:music[0], cadence};
+    shortId:shortIds[0], music:music[0], excerpts, cadence};
 }
 
 function arrange(after = -1, omitCurrent = false) {
@@ -267,7 +347,7 @@ function tick() {
 }
 
 function failed() {
-  if (["music", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
+  if (["music", "audio_excerpt", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
     const autoplay = playing;
     takePost(autoplay);
     message("the break was unavailable. continuing with the next post.");
@@ -300,7 +380,12 @@ function readout(post) {
   if (post) {
     const date = shortDate(post.body.date);
     byId("details").textContent = segmentNames[current.kind] + (date ? " · " + date : "");
-  } else byId("details").textContent = current.kind === "music" ? "musical excerpt · 9 seconds" : "astra · speaking with kokoro";
+  } else {
+    let details = "astra · speaking with kokoro";
+    if (current.kind === "music") details = "musical excerpt · 9 seconds";
+    if (current.kind === "audio_excerpt") details = "audio excerpt · 9 seconds";
+    byId("details").textContent = current.credit ? details + " · " + current.credit : details;
+  }
 
   const source = byId("original");
   source.hidden = !post && lastPost < 0;
@@ -346,11 +431,20 @@ function intermissionAfterReading(duration) {
   const cadence = program.cadence.break_every;
   if (!cadence) return null;
   const sinceBreak = completions - lastBreak;
+  if (mixBags) return mixedIntermission(duration, sinceBreak, cadence);
   // The generator measures the body’s decoded sample frames, independently of
   // its introduction, wall-clock pauses, and MP3 container padding.
-  if (duration >= longReadingSeconds && program.features.length &&
-      (!lastBreak || sinceBreak >= Math.max(minimumFeatureSpacing, cadence))) {
-    return program.features[featureNumber++ % program.features.length];
+  if (program.features.length) {
+    readingSecondsSinceFeature += duration;
+    const accumulated = readingSecondsSinceFeature >= (program.cadence.feature_after_reading_seconds ?? Infinity);
+    if (duration >= longReadingSeconds || accumulated) {
+      if ((!lastBreak && duration >= longReadingSeconds) || sinceBreak >= Math.max(minimumFeatureSpacing, cadence)) {
+        readingSecondsSinceFeature = 0;
+        return program.features[featureNumber++ % program.features.length];
+      }
+      // With a two- or three-post cadence, leave space for an earned longer break.
+      if (accumulated) return null;
+    }
   }
   if (program.breaks.length && sinceBreak >= cadence) {
     return program.breaks[breakNumber++ % program.breaks.length];
@@ -385,7 +479,8 @@ function finish() {
         return;
       }
       // Reserve room either side of an ID so breaks never crowd together.
-      const nearBreak = break_every && program.breaks.length && completions - lastBreak + 1 >= break_every;
+      const nearBreak = break_every && program.breaks.length && completions - lastBreak + 1 >=
+        (mixBags ? Math.min(2, break_every) : break_every);
       if (program.shortId && short_id_every && completions % short_id_every === 0 &&
           completions - lastAnnouncement >= 2 && !nearBreak) {
         lastAnnouncement = completions;
@@ -395,12 +490,14 @@ function finish() {
       break;
     }
     case "intermission":
-    case "feature_intermission":
-      if (program.music) {
-        show(program.music, true);
+    case "feature_intermission": {
+      const clip = current.excerpt_id ? program.excerpts.get(current.excerpt_id) : program.music;
+      if (clip) {
+        show(clip, true);
         return;
       }
       break;
+    }
   }
   takePost(true);
 }
@@ -441,6 +538,7 @@ async function load() {
       byId("volume").disabled = true;
       return;
     }
+    setupMixedRotation();
     arrange();
     buildProgram();
     show(program.opening, false);
