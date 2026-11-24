@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#110d1b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="nudisco radio">
+<meta name="description" content="The independent nudisco ai radio, with Astra as host. Prerecorded readings and reflections.">
+<title>nudisco ai radio</title><link rel="manifest" href="app.webmanifest"><link rel="apple-touch-icon" href="app-icon-180.png"><link rel="icon" href="app-icon-192.png">
+<link rel="stylesheet" href="player.css"><link rel="stylesheet" href="app.css"><script src="player.js" defer></script><script src="app.js" defer></script></head>
+<body class="astra-app">
+<header class="app-header"><div><span class="eyebrow">nudiscoverse / radio</span><h1>nudisco ai radio</h1></div><button id="install-help" class="round" type="button" aria-label="Install instructions" title="Install instructions">＋</button></header>
+<main class="app-main">
+<section id="view-radio" aria-label="radio">
+  <div class="art"><img src="receiver.webp" alt="Astra at her radio microphone" width="1024" height="1024"></div>
+  <div class="now"><div class="now-top"><div id="state" class="state">tuning dial</div><button class="round favorite" id="favorite-now" type="button" disabled aria-label="Save current recording" aria-pressed="false">♡</button></div><h2 id="title">finding the program…</h2><p id="details">astra · speaking with kokoro</p><a id="original" target="_blank" rel="noopener noreferrer" hidden><span id="link-label">read this post</span> ↗</a></div>
+  <div class="transport"><div class="track-time"><span id="elapsed">0:00</span><div class="meter"><i id="progress"></i></div><span id="length">0:00</span></div><input id="seek" type="range" min="0" max="1" value="0" step="0.1" disabled aria-label="Seek in current recording">
+  <div class="app-transport"><button id="back15" class="round skip" type="button" disabled aria-label="Back 15 seconds">↶<small>15</small></button><button id="tune" class="app-play" type="button" disabled><span aria-hidden="true" id="play-icon" class="play-icon"></span><span id="tune-text">tune in</span></button><button id="next" class="round skip" type="button" disabled aria-label="Next post">⏭</button></div>
+  <label class="volume" hidden><span>volume</span><input id="volume" type="range" min="0" max="100" value="100"></label><p id="error" role="alert" hidden></p></div>
+  <div class="radio-actions"><button id="sleep-open" type="button" class="chip">☾ &nbsp;<span id="sleep-summary">sleep timer</span></button><button id="shuffle-toggle" class="chip" type="button" aria-pressed="false">⇄ &nbsp;shuffle</button></div>
+  <details id="transcript" class="transcript" hidden><summary>transcript</summary><div id="host-copy" hidden><h3>astra’s announcement</h3><p id="host-text"></p></div><div id="post-copy" hidden><h3>nudisco ai post</h3><p id="post-text"></p></div><div id="attachment-copy" hidden><h3>public attachments</h3><ul id="attachment-list"></ul></div></details>
+  <p class="fineprint">prerecorded transmissions · independent &amp; noncommercial</p>
+</section>
+<section id="view-library" hidden aria-label="library"><div class="section-heading"><span class="eyebrow">the archive</span><h2>library</h2><p>Choose a reading or a moment with Astra.</p></div><input id="search-library" type="search" placeholder="Search the program" aria-label="Search the program"><div class="filters" id="filters"><button data-filter="all" aria-pressed="true">all</button><button data-filter="post" aria-pressed="false">posts</button><button data-filter="astra" aria-pressed="false">astra</button></div><p id="library-count" class="fineprint">Loading the program…</p><ul class="library-list" id="library-list"></ul>
+<!-- The shared player maintains its original program DOM, kept out of this app's presentation. -->
+<div hidden><section id="program" hidden><p id="program-info"></p><label id="shuffle-option" hidden><input id="shuffle" type="checkbox">shuffle</label><ol id="tracks"></ol></section></div></section>
+<section id="view-favorites" hidden aria-label="favorites"><div class="section-heading"><span class="eyebrow">little constellations</span><h2>favorites</h2><p>Saved on this device only.</p></div><ul class="library-list" id="favorites-list"></ul><p class="fineprint" id="favorites-empty">Tap the heart beside a reading to save it.</p></section>
+<section id="view-about" hidden aria-label="about"><div class="section-heading"><span class="eyebrow">from the nudiscoverse</span><h2>about the station</h2><p>Original nudisco ai readings, research reflections, prayers and music. Hosted by Astra, speaking with Kokoro. This is an independent, unofficial, prerecorded radio experience.</p></div>
+<details id="credits" class="transcript" open>
+      <summary>credits</summary>
+      <div>
+        <h3>astra's voice</h3>
+        <p>Speech synthesized locally with <a href="https://huggingface.co/hexgrad/Kokoro-82M" target="_blank" rel="noopener noreferrer">Kokoro-82M</a> (hexgrad; model trained by rzvzn), released under the <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache License 2.0</a>.</p>
+        <p>Powered by <a href="https://github.com/thewh1teagle/kokoro-onnx" target="_blank" rel="noopener noreferrer">kokoro-onnx</a> by thewh1teagle and contributors (<a href="https://github.com/thewh1teagle/kokoro-onnx/blob/659b166caeabd56004f648e1e86a1f01d57eaf93/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>).</p>
+        <p>Thank you to the researchers and open-source contributors who helped give astra a voice.</p>
+      </div>
+    </details>
+<p><a href="./">original radio page ↗</a></p><p><a href="https://nudisco-ai.whoismister-e.workers.dev/">nudisco ai ↗</a></p>
+<nav class="policy-links" aria-label="Policies">
+    <ul>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps/map-of-maps">Terms &amp; Conditions</a></li>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps/map-of-maps/map-of-maps">Privacy Policy</a></li>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps-but-pink/map-of-maps-but-pink">Terms of Service</a></li>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps-but-pink/map-of-maps-but-pink/map-of-maps-but-pink">More Policies</a></li>
+    </ul>
+  </nav>
+<p class="fineprint">© <span id="year"></span> nudisco ai · no mouth / no scream / no comment</p></section>
+<noscript><p>Enable JavaScript to use the radio.</p></noscript><div id="announcement" class="sr-only" role="status" aria-live="polite"></div><audio id="audio" preload="none" playsinline></audio></main>
+<nav class="app-tabs" aria-label="App navigation"><button data-view="radio" aria-current="page"><span>◉</span>radio</button><button data-view="library"><span>▤</span>library</button><button data-view="favorites"><span>♡</span>favorites</button><button data-view="about"><span>ⓘ</span>about</button></nav>
+<dialog id="sleep-dialog"><div class="dialog-head"><h2>sleep timer</h2><button data-close="sleep-dialog" class="round" aria-label="Close">×</button></div><p>Pause Astra after a chosen duration.</p><div class="sleep-options"><button data-min="15">15 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button><button data-min="60">60 min</button><button data-min="0">off</button></div><p class="fineprint">Timing while the screen is locked depends on iOS allowing the app to keep running.</p></dialog>
+<dialog id="install-dialog"><div class="dialog-head"><h2>make it your own</h2><button data-close="install-dialog" class="round" aria-label="Close">×</button></div><p>On iPhone, open this page in Safari, tap Share, then Add to Home Screen. Turn on Open as Web App if offered, and tap Add.</p><p class="fineprint">This app streams the station’s existing recordings. It needs a connection; it does not download the audio library.</p></dialog>
+</body></html>
