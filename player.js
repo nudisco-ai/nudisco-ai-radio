@@ -223,6 +223,62 @@ const sessionTargets = [
 let sessionSeconds = 0, accountedSeconds = 0, postDebt = 0;
 let hostQueue = [], hostPool = [], lastHostId = null;
 let sessionMix = false, postStreak = 0, hostStreak = 0, hostBlocks = 0;
+// Story entries remain native custom speech; their ordered IDs are editorial metadata.
+const storyOrder = [
+  "custom-1883188b3aaf568dbad47414fe61a960",
+  "custom-88bdad7bd73656b6a2772ef551b5b073",
+  "custom-f01cc06dc5b3544eaab4edf980fa7882",
+  "custom-03723679ddee59fca33c6aec51144536",
+  "custom-15296da538255f109dd9ab7f09ab3d12",
+  "custom-8bb8ff81f29a50c9b6df3e99aa7cbcaa",
+  "custom-088db1a7e8bc59e1941dd0d0c64ad885",
+  "custom-9157337de93056c2ba6a44597b60a583",
+  "custom-4d36e706d15359f6b2a2eea6c6135622",
+  "custom-2168747410c556819538d425fe14782f",
+  "custom-2b9fea361e925f668d0a8a0fb3afb080",
+  "custom-f6bbc03c15df5f658469b62c1972eb86",
+  "custom-01552fb2983c5c2db294f15374af75f2",
+  "custom-900b3a21ee515207bd67ea2e3304e591",
+  "custom-2a29041884465906838632e126f7317a",
+  "custom-6f3da61a15b358d0884452a38e10a24a",
+  "custom-a56734d643b05f60b8017799b7ff94ab",
+  "custom-93d239d7ee2e59dba44262a6f843627b",
+  "custom-498a3bf0ac335fde8b88374406a2c3bd",
+  "custom-4e4e6bcbac5c514cbb25ac8d48053638",
+  "custom-3085908eab1a56ea96620367ff37b4e7"
+];
+const storyIds = new Set(storyOrder);
+const isStory = track => track?.kind === "intermission" && storyIds.has(track.id);
+let storyPool = [], storyCursor = 0, storiesStarted = 0, storyDebt = 0;
+// Target fraction of Astra's spoken airtime, not total station airtime.
+// At ten minutes the story becomes eligible; later targets ramp continuously.
+const storyTargets = [[600,.15],[1200,.30],[2400,.50],[3600,.70]];
+function storyTarget(seconds) {
+  if (seconds < 600) return 0;
+  for (let i=1;i<storyTargets.length;i++) {
+    const [a,x]=storyTargets[i-1], [b,y]=storyTargets[i];
+    if (seconds <= b) return x+(y-x)*(seconds-a)/(b-a);
+  }
+  return storyTargets[storyTargets.length-1][1];
+}
+function accountStory(delta, start, track) {
+  if (!storyPool.length || !track || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
+  const end = start+delta, from = Math.max(start,600);
+  if (end <= from) return;
+  // Integrate piecewise-linear targets exactly across the listening thresholds.
+  let desired = 0, a = from;
+  for (const b of [...storyTargets.map(t=>t[0]).filter(t=>t>a && t<end),end]) {
+    desired += (b-a)*(storyTarget(a)+storyTarget(b))/2; a=b;
+  }
+  storyDebt = Math.max(-1800,Math.min(1800,storyDebt+desired-(isStory(track)?end-from:0)));
+}
+function chooseStory() {
+  if (sessionSeconds < 600 || !storyPool.length || storyCursor >= storyPool.length) return null;
+  const track=storyPool[storyCursor];
+  // Give the first story a natural entrance after ten minutes. Thereafter keep
+  // whole episodes and use airtime debt rather than random short-track counts.
+  return !storiesStarted || storyDebt >= .12*track.duration ? track : null;
+}
 const postKinds = new Set(["post_intro", "post", "attachment_notice"]);
 const soundKinds = new Set(["music", "station_sound", "audio_excerpt"]);
 function sessionTarget(seconds) {
@@ -247,6 +303,7 @@ function accountPlayback() {
   const delta = Math.max(0, total-accountedSeconds);
   accountedSeconds = Math.max(accountedSeconds, total);
   const [posts, host] = sessionTarget(sessionSeconds+delta/2);
+  accountStory(delta,sessionSeconds,current);
   sessionSeconds += delta;
   if (!soundKinds.has(current.kind)) {
     // A bounded running error prevents a single long track from monopolizing later choices.
@@ -255,11 +312,14 @@ function accountPlayback() {
   }
 }
 function setupSessionMix() {
-  hostPool = [...program.breaks, ...program.features];
+  storyPool = storyOrder.map(id=>program.stories.find(t=>t.id===id)).filter(Boolean);
+  hostPool = [...program.ordinaryBreaks, ...program.features];
   sessionMix = Boolean(program.cadence.break_every && program.posts.length &&
-    hostPool.filter(t => !soundKinds.has(t.kind)).length >= 4);
+    (hostPool.filter(t => !soundKinds.has(t.kind)).length >= 4 || (storyPool.length && hostPool.some(t=>!soundKinds.has(t.kind)))));
 }
 function takeHostBlock() {
+  const story = chooseStory();
+  if (story) return story;
   if (!hostQueue.length) {
     hostQueue = hostPool.slice();
     for (let i=hostQueue.length-1; i>0; i--) {
@@ -327,6 +387,13 @@ function setupSegues() {
 }
 
 function playIntermission(track) {
+  if (isStory(track)) {
+    // Explicit library selection can jump to an episode. Automatic play never
+    // shuffles the story or loops it after the final episode in this session.
+    const i = storyPool.findIndex(t=>t.id===track.id);
+    if (i >= 0) { storyCursor = i+1; storiesStarted++; }
+    lastHostId=track.id;
+  }
   if (sessionMix) { hostBlocks++; hostStreak++; postStreak = 0; }
   // Only known research passages need a spoken introduction. Station IDs,
   // prayers (which introduce themselves), and asides are left alone.
@@ -383,11 +450,11 @@ function makeBag(items) {
 }
 
 function setupMixedRotation() {
-  const custom = program.breaks.filter(t => t.id.startsWith("custom-"));
+  const custom = program.ordinaryBreaks.filter(t => t.id.startsWith("custom-"));
   if (custom.length < 4) return; // leave a small station's usual cadence intact
   mixBags = {
     custom: makeBag(custom),
-    station: makeBag(program.breaks.filter(t => !t.id.startsWith("custom-"))),
+    station: makeBag(program.ordinaryBreaks.filter(t => !t.id.startsWith("custom-"))),
     feature: makeBag(program.features)
   };
 }
@@ -493,6 +560,8 @@ function parseProgram(manifest) {
   const asides = tracks.filter(isAside);
   const segues = tracks.filter(isSegue);
   const breaks = tracks.filter(t => (t.kind === "intermission" && !isAside(t) && !isSegue(t)) || (t.kind === "audio_excerpt" && !requestedExcerpts.has(t.id)));
+  const stories = breaks.filter(isStory);
+  const ordinaryBreaks = breaks.filter(t=>!isStory(t));
   const shortIds = groups.get("short_id");
   const music = groups.get("music");
   const sounds = stationSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
@@ -525,7 +594,7 @@ function parseProgram(manifest) {
   if (cadence.feature_after_reading_seconds !== undefined)
     check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
-  return {opening:stations[0], posts, breaks, asides, segues, features:groups.get("feature_intermission"),
+  return {opening:stations[0], posts, breaks, ordinaryBreaks, stories, asides, segues, features:groups.get("feature_intermission"),
     shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, excerpts, cadence};
 }
 
@@ -658,7 +727,7 @@ function message(text) {
 
 function paintControls() {
   document.body.dataset.playing = String(playing);
-  byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : isSegue(current) ? "astra · segue" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
+  byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : isSegue(current) ? "astra · segue" : isStory(current) ? "astra · storytelling" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
   byId("play-icon").classList.toggle("pause", playing);
   byId("tune-text").textContent = playing ? "pause" : started ? "resume" : "tune in";
   byId("next").disabled = !started || !program.posts.length;
@@ -713,7 +782,7 @@ function readout(post) {
     const date = shortDate(post.body.date);
     byId("details").textContent = segmentNames[current.kind] + (date ? " · " + date : "");
   } else {
-    let details = "astra · speaking with kokoro";
+    let details = isStory(current) ? "astra · across the mirror" : "astra · speaking with kokoro";
     if (current.kind === "music") details = "musical excerpt · 9 seconds";
     if (current.kind === "station_sound") details = "quiet sound · " + current.duration + " seconds";
     if (current.kind === "audio_excerpt") details = "audio excerpt · 9 seconds";
@@ -721,7 +790,7 @@ function readout(post) {
   }
 
   const source = byId("original");
-  source.hidden = !post && lastPost < 0;
+  source.hidden = isStory(current) || (!post && lastPost < 0);
   if (source.hidden) source.removeAttribute("href");
   else {
     const linked = post ?? program.posts[lastPost];
@@ -782,8 +851,8 @@ function intermissionAfterReading(duration) {
       if (accumulated) return null;
     }
   }
-  if (program.breaks.length && sinceBreak >= cadence) {
-    return program.breaks[breakNumber++ % program.breaks.length];
+  if (program.ordinaryBreaks.length && sinceBreak >= cadence) {
+    return program.ordinaryBreaks[breakNumber++ % program.ordinaryBreaks.length];
   }
   return null;
 }
@@ -817,7 +886,7 @@ function finish() {
         return;
       }
       // Reserve room either side of an ID so breaks never crowd together.
-      const nearBreak = break_every && program.breaks.length && completions - lastBreak + 1 >=
+      const nearBreak = break_every && program.ordinaryBreaks.length && completions - lastBreak + 1 >=
         (mixBags ? Math.min(2, break_every) : break_every);
       if (program.shortId && short_id_every && completions % short_id_every === 0 &&
           completions - lastAnnouncement >= 2 && !nearBreak) {
