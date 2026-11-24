@@ -1,20 +1,35 @@
 "use strict";
 
 const byId = id => document.getElementById(id);
+byId("year").textContent = new Date().getFullYear();
 const audio = byId("audio");
+const musicTitle = "nudisco ai lofi";
 const originalSite = "https://nudisco-ai.whoismister-e.workers.dev";
 const openingWords = "this is nudisco ai astra, speaking with kokoro.";
 const noticeWords = "there is difficult material attached to this post. you can visit the site to view it.";
 const friendshipWords = "you're listening to nudisco ai radio. remember that friendship is magic.";
+const longReadingSeconds = 180;
+const minimumFeatureSpacing = 4;
 const segmentNames = {
-  station_intro: "station introduction", post_intro: "post introduction", post: "normaldisco reading",
-  attachment_notice: "attachment notice", intermission: "intermission", short_id: "station identification", music: "intermission · music"
+  station_intro: "station introduction", post_intro: "post introduction", post: "nudisco ai reading",
+  attachment_notice: "attachment notice", intermission: "intermission", feature_intermission: "extended intermission", short_id: "station identification", music: "intermission · music"
 };
 let program;
 let current;
 let currentPost = -1;
 let lastPost = -1;
-let order = [];
+const rowsPerPage = 50;
+const visibleRows = new Map();
+const dateFormat = new Intl.DateTimeFormat("en", {
+  month: "short", day: "numeric", year: "numeric", timeZone: "UTC"
+});
+let page = 0;
+let activeButton;
+let pageButtons;
+let nextIndex = 0;
+let chosenFirst = null;
+let shuffledOrder = [];
+let shuffleCursor = 0;
 let shuffled = false;
 let started = false;
 let playing = false;
@@ -23,6 +38,7 @@ let completions = 0;
 let lastBreak = 0;
 let lastAnnouncement = 0;
 let breakNumber = 0;
+let featureNumber = 0;
 
 function clock(seconds) {
   const total = Math.max(0, Math.floor(seconds));
@@ -34,9 +50,7 @@ function shortDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:$|[T ])/.test(value)) return "";
   const date = new Date(value.slice(0, 10) + "T00:00:00Z");
   if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en", {
-    month: "short", day: "numeric", year: "numeric", timeZone: "UTC"
-  }).format(date).toLowerCase();
+  return dateFormat.format(date).toLowerCase();
 }
 
 function check(ok) {
@@ -52,16 +66,25 @@ function validPostLink(track) {
 }
 
 function parseProgram(manifest) {
-  check(manifest?.schema_version === 2 && Array.isArray(manifest.tracks) && manifest.tracks.length <= 36);
+  check(manifest?.schema_version === 2 && Array.isArray(manifest.tracks));
   if (!manifest.tracks.length) return null;
   const tracks = manifest.tracks;
   const seen = new Set();
+  const groups = new Map(Object.keys(segmentNames).map(kind => [kind, []]));
+  const intros = new Map();
+  const notices = new Map();
   for (const track of tracks) {
     check(track && Object.hasOwn(segmentNames, track.kind) && typeof track.id === "string" &&
       !seen.has(track.id) && Number.isFinite(track.duration) && track.duration > 0 &&
       typeof track.audio_url === "string" && /^audio\/[a-zA-Z0-9_-]+\.mp3$/.test(track.audio_url));
     seen.add(track.id);
-    if (track.kind === "music") check(track.id === "lofi-nudisco" && track.title === "lofi nudisco" && track.duration === 9);
+    groups.get(track.kind).push(track);
+    if (track.kind === "post_intro" || track.kind === "attachment_notice") {
+      const index = track.kind === "post_intro" ? intros : notices;
+      check(!index.has(track.post_id));
+      index.set(track.post_id, track);
+    }
+    if (track.kind === "music") check(track.id === "lofi-nudisco" && (track.title === musicTitle || track.title === "lofi nudisco") && track.duration === 9);
     if (track.kind === "post" || track.kind === "post_intro") {
       check(track.edition === "regular" && validPostLink(track));
       check(!track.date || shortDate(track.date));
@@ -70,65 +93,76 @@ function parseProgram(manifest) {
     if (track.kind === "post") check(typeof track.authored_text === "string" && track.authored_text.trim());
     else if (track.kind !== "music") check(typeof track.announcement_text === "string" && track.announcement_text.trim());
   }
-  const segments = kind => tracks.filter(t => t.kind === kind);
-  const stations = segments("station_intro");
-  const bodies = segments("post");
-  const intros = segments("post_intro");
-  const notices = segments("attachment_notice");
-  const breaks = segments("intermission");
-  const shortIds = segments("short_id");
-  const music = segments("music");
+  const stations = groups.get("station_intro");
+  const bodies = groups.get("post");
+  const breaks = groups.get("intermission");
+  const shortIds = groups.get("short_id");
+  const music = groups.get("music");
   check(stations.length === 1 && stations[0].announcement_text.startsWith(openingWords));
-  check(bodies.length <= 10 && bodies.length === intros.length && shortIds.length <= 1 && music.length <= 1);
-  const postIds = new Set(bodies.map(body => body.post_id));
-  check(postIds.size === bodies.length && intros.every(intro => postIds.has(intro.post_id)) && notices.every(n => postIds.has(n.post_id)));
+  check(bodies.length === intros.size && shortIds.length <= 1 && music.length <= 1);
+
+  // Bodies are in broadcast order. Consume each matching side segment once.
   const posts = bodies.map(body => {
-    const pair = intros.filter(i => i.post_id === body.post_id);
-    check(pair.length === 1 && body.source_url === pair[0].source_url);
+    const intro = intros.get(body.post_id);
+    const notice = notices.get(body.post_id);
+    check(intro && body.source_url === intro.source_url);
+    check(Boolean(notice) === Boolean(body.difficult_attachment));
+    check(!notice || notice.source_url === body.source_url);
+    intros.delete(body.post_id);
+    notices.delete(body.post_id);
     const attachments = body.attachments ?? [];
     check(Array.isArray(attachments) && attachments.every(a => a &&
       ["filename","caption","label","unknown"].includes(a.kind) && (a.value == null || typeof a.value === "string")));
-    const notice = notices.filter(n => n.post_id === body.post_id);
-    check(notice.length === (body.difficult_attachment ? 1 : 0));
-    check(!notice.length || notice[0].source_url === body.source_url);
-    return {body, intro: pair[0], notice: notice[0], title: body.title || "untitled post", attachments};
+    return {body, intro, notice, title: body.title || "untitled post", attachments};
   });
+  check(intros.size === 0 && notices.size === 0);
   const cadence = manifest.program ?? {break_every: 4, short_id_every: 0};
   for (const key of ["break_every", "short_id_every"])
     check(Number.isInteger(cadence[key]) && cadence[key] >= 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
-  return {opening:stations[0], posts, breaks, shortId:shortIds[0], music:music[0], cadence};
+  return {opening:stations[0], posts, breaks, features:groups.get("feature_intermission"),
+    shortId:shortIds[0], music:music[0], cadence};
 }
 
-function arrange(exclude = -1) {
+function arrange(after = -1, omitCurrent = false) {
   const count = program.posts.length;
-  order = Array.from({length: count}, (_, i) => i);
-  if (!count) return;
-  if (!shuffled) {
-    const first = (exclude + 1) % count;
-    order = order.slice(first).concat(order.slice(0, first));
-  } else {
-    for (let i = count - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    if (count > 1 && order[0] === exclude) [order[0], order[1]] = [order[1], order[0]];
+  nextIndex = count ? (after + 1) % count : 0;
+  shuffledOrder = [];
+  shuffleCursor = 0;
+  if (!shuffled || !count) return;
+
+  for (let i = 0; i < count; i++) {
+    if (!omitCurrent || i !== after) shuffledOrder.push(i);
+  }
+  for (let i = shuffledOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledOrder[i], shuffledOrder[j]] = [shuffledOrder[j], shuffledOrder[i]];
+  }
+  if (shuffledOrder.length > 1 && shuffledOrder[0] === after) {
+    [shuffledOrder[0], shuffledOrder[1]] = [shuffledOrder[1], shuffledOrder[0]];
   }
 }
 
 function takePost(autoplay) {
-  if (!order.length) arrange(currentPost);
-  currentPost = order.shift();
+  if (chosenFirst !== null) {
+    currentPost = chosenFirst;
+    chosenFirst = null;
+  } else if (shuffled) {
+    if (shuffleCursor >= shuffledOrder.length) arrange(currentPost);
+    currentPost = shuffledOrder[shuffleCursor++];
+  } else {
+    currentPost = nextIndex;
+    nextIndex = (nextIndex + 1) % program.posts.length;
+  }
   lastPost = currentPost;
   show(program.posts[currentPost].intro, autoplay);
 }
 
 function selectPost(index) {
-  arrange(index);
-  order = order.filter(i => i !== index);
+  arrange(index, true);
   if (!started || current.kind === "station_intro") {
     // Keep the once-per-tune-in opening and select the first reading after it.
-    order.unshift(index);
+    chosenFirst = index;
     byId("details").textContent = "up next · " + program.posts[index].title;
     byId("announcement").textContent = byId("details").textContent;
     return;
@@ -137,10 +171,22 @@ function selectPost(index) {
   show(program.posts[index].intro, playing);
 }
 
-function buildProgram() {
-  if (!program.posts.length) return;
+function markCurrent(index) {
+  if (activeButton) activeButton.removeAttribute("aria-current");
+  activeButton = visibleRows.get(index);
+  if (activeButton) activeButton.setAttribute("aria-current", "true");
+}
+
+function renderPage() {
   const list = byId("tracks");
-  program.posts.forEach((post, index) => {
+  list.replaceChildren();
+  visibleRows.clear();
+  const count = program.posts.length;
+  const start = page * rowsPerPage;
+  const stop = Math.min(count, start + rowsPerPage);
+  list.start = start + 1;
+  for (let index = start; index < stop; index++) {
+    const post = program.posts[index];
     const item = document.createElement("li");
     const button = document.createElement("button");
     button.type = "button";
@@ -159,8 +205,40 @@ function buildProgram() {
     button.addEventListener("click", () => selectPost(index));
     item.append(button);
     list.append(item);
-  });
-  byId("program-info").textContent = program.posts.length + (program.posts.length === 1 ? " post" : " posts");
+    visibleRows.set(index, button);
+  }
+  const isPostSegment = current && ["post_intro", "post", "attachment_notice"].includes(current.kind);
+  markCurrent(isPostSegment ? currentPost : -1);
+  const total = count + (count === 1 ? " post" : " posts");
+  byId("program-info").textContent = pageButtons ? (start + 1) + "–" + stop + " of " + total : total;
+  if (pageButtons) {
+    pageButtons[0].disabled = page === 0;
+    pageButtons[1].disabled = stop === count;
+  }
+}
+
+function buildProgram() {
+  if (!program.posts.length) return;
+  if (program.posts.length > rowsPerPage) {
+    byId("program-info").setAttribute("aria-live", "polite");
+    const nav = document.createElement("nav");
+    nav.setAttribute("aria-label", "program pages");
+    nav.className = "buttons";
+    pageButtons = [-1, 1].map(step => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = step < 0 ? "previous page" : "next page";
+      button.addEventListener("click", () => {
+        page += step;
+        renderPage();
+      });
+      nav.append(button);
+      return button;
+    });
+    byId("program").append(nav);
+  }
+  renderPage();
   byId("shuffle-option").hidden = program.posts.length < 2;
   byId("program").hidden = false;
 }
@@ -189,7 +267,7 @@ function tick() {
 }
 
 function failed() {
-  if (current.kind === "music" || current.kind === "intermission" || current.kind === "short_id") {
+  if (["music", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
     const autoplay = playing;
     takePost(autoplay);
     message("the break was unavailable. continuing with the next post.");
@@ -218,11 +296,11 @@ function play() {
 }
 
 function readout(post) {
-  byId("title").textContent = post ? post.title : current.title || segmentNames[current.kind];
+  byId("title").textContent = current.kind === "music" ? musicTitle : post ? post.title : current.title || segmentNames[current.kind];
   if (post) {
     const date = shortDate(post.body.date);
     byId("details").textContent = segmentNames[current.kind] + (date ? " · " + date : "");
-  } else byId("details").textContent = current.kind === "music" ? "lofi nudisco · musical excerpt" : "astra · speaking with kokoro";
+  } else byId("details").textContent = current.kind === "music" ? "musical excerpt · 9 seconds" : "astra · speaking with kokoro";
 
   const source = byId("original");
   source.hidden = !post && lastPost < 0;
@@ -230,7 +308,7 @@ function readout(post) {
   else {
     const linked = post ?? program.posts[lastPost];
     source.href = linked.body.source_url;
-    byId("link-label").textContent = post ? "read this normaldisco post" : "previous post · " + linked.title;
+    byId("link-label").textContent = post ? "read this nudisco ai post" : "previous post · " + linked.title;
   }
   const isNotice = current.kind === "attachment_notice";
   byId("host-text").textContent = post && !isNotice ? post.intro.announcement_text : current.announcement_text || "";
@@ -247,10 +325,7 @@ function readout(post) {
     list.append(li);
   }
   byId("transcript").hidden = !post && !current.announcement_text;
-  byId("tracks").querySelectorAll("button").forEach((button, i) => {
-    if (post && i === currentPost) button.setAttribute("aria-current", "true");
-    else button.removeAttribute("aria-current");
-  });
+  markCurrent(post ? currentPost : -1);
 }
 
 function show(track, autoplay) {
@@ -265,6 +340,22 @@ function show(track, autoplay) {
   paintControls();
   tick();
   if (autoplay) play();
+}
+
+function intermissionAfterReading(duration) {
+  const cadence = program.cadence.break_every;
+  if (!cadence) return null;
+  const sinceBreak = completions - lastBreak;
+  // The generator measures the body’s decoded sample frames, independently of
+  // its introduction, wall-clock pauses, and MP3 container padding.
+  if (duration >= longReadingSeconds && program.features.length &&
+      (!lastBreak || sinceBreak >= Math.max(minimumFeatureSpacing, cadence))) {
+    return program.features[featureNumber++ % program.features.length];
+  }
+  if (program.breaks.length && sinceBreak >= cadence) {
+    return program.breaks[breakNumber++ % program.breaks.length];
+  }
+  return null;
 }
 
 function finish() {
@@ -287,9 +378,10 @@ function finish() {
         return;
       }
       const {break_every, short_id_every} = program.cadence;
-      if (program.breaks.length && break_every && completions - lastBreak >= break_every) {
+      const intermission = intermissionAfterReading(current.duration);
+      if (intermission) {
         lastBreak = lastAnnouncement = completions;
-        show(program.breaks[breakNumber++ % program.breaks.length], true);
+        show(intermission, true);
         return;
       }
       // Reserve room either side of an ID so breaks never crowd together.
@@ -303,6 +395,7 @@ function finish() {
       break;
     }
     case "intermission":
+    case "feature_intermission":
       if (program.music) {
         show(program.music, true);
         return;
@@ -343,7 +436,7 @@ async function load() {
     program = parseProgram(manifest);
     if (!program) {
       byId("state").textContent = "off the air";
-      byId("title").textContent = "the pilot is being prepared.";
+      byId("title").textContent = "the program is being prepared.";
       byId("details").textContent = "recordings will appear here when the first program is ready.";
       byId("volume").disabled = true;
       return;
@@ -375,8 +468,7 @@ byId("tune").addEventListener("click", () => {
 byId("next").addEventListener("click", () => { if (started && program.posts.length) takePost(playing); });
 byId("shuffle").addEventListener("change", () => {
   shuffled = byId("shuffle").checked;
-  arrange(currentPost);
-  if (currentPost >= 0 && program.posts.length > 1) order = order.filter(i => i !== currentPost);
+  arrange(chosenFirst ?? currentPost, true);
 });
 byId("volume").addEventListener("input", setVolume);
 audio.addEventListener("ended", finish);

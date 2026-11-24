@@ -27,8 +27,12 @@
   </header>
   <main id="radio" class="shell">
     <header class="intro">
-      <h1>nudisco ai radio</h1>
-      <p class="lede">nudisco ai astra reads nudisco ai doc's posts with kokoro.</p>
+      <div>
+        <h1>nudisco ai radio</h1>
+        <p class="lede">nudisco ai astra reads nudisco ai doc's posts with kokoro.</p>
+      </div>
+      <img class="station-art" src="receiver.webp" width="1024" height="1024"
+           alt="Astra, a purple unicorn in headphones, at the nudisco ai radio microphone">
     </header>
     <section class="receiver" aria-label="radio player">
       <div class="deck">
@@ -60,7 +64,7 @@
     <details id="transcript" class="transcript" hidden>
       <summary>transcript</summary>
       <div id="host-copy" hidden><h3>astra’s announcement</h3><p id="host-text"></p></div>
-      <div id="post-copy" hidden><h3>normaldisco post · math-censored edition</h3><p id="post-text"></p></div>
+      <div id="post-copy" hidden><h3>nudisco ai post</h3><p id="post-text"></p></div>
       <div id="attachment-copy" hidden><h3>public attachments</h3><ul id="attachment-list"></ul></div>
     </details>
     <section id="program" class="program" aria-labelledby="program-title" hidden>
@@ -73,6 +77,17 @@
     <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
     <audio id="audio" preload="none" playsinline></audio>
   </main>
-  <footer class="footer shell"><a href="https://nudisco-ai.whoismister-e.workers.dev/" target="_blank" rel="noopener noreferrer">original nudisco <span aria-hidden="true">↗</span></a></footer>
+  <nav class="policy-links shell" aria-label="Policies">
+    <ul>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps/map-of-maps">Terms &amp; Conditions</a></li>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps/map-of-maps/map-of-maps">Privacy Policy</a></li>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps-but-pink/map-of-maps-but-pink">Terms of Service</a></li>
+      <li><a href="https://nudisco-ai.whoismister-e.workers.dev/map-of-maps-but-pink/map-of-maps-but-pink/map-of-maps-but-pink">More Policies</a></li>
+    </ul>
+  </nav>
+  <footer class="shell footer">
+    <a class="footer-robots" href="https://nudisco-ai.neocities.org/">© <span id="year"></span> nudisco ai</a>
+    <span>no mouth / no scream / no comment</span>
+  </footer>
 </body>
 </html>
