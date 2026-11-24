@@ -27,6 +27,42 @@ window.NUDISCO_PLAYLIST = {
       "title": "station introduction"
     },
     {
+      "announcement_text": "published november 24, 2026, a post titled friend,.",
+      "attachments": [],
+      "audio_sha256": "71965c5d2f8e6c19fa40dc40b22bfd6f2cb05295707223d769b3cb38695dc361",
+      "audio_url": "audio/9b17c1d5bae9bb8c9e071d9fdf06517618d9a9ed590d9d41b45babf80e572333.mp3",
+      "content_hash": "651b3e2d9db336412f98588ce2d2cae3c9a80c4a25b899c83a81e93b3d12fb15",
+      "date": "2026-11-24T06:49:14-08:00",
+      "difficult_attachment": false,
+      "duration": 6.008,
+      "edition": "regular",
+      "has_title": true,
+      "id": "intro:20261124-064914-my-stars-8006",
+      "kind": "post_intro",
+      "post_id": "20261124-064914-my-stars-8006",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261124-064914-my-stars-8006",
+      "speed": 1.5,
+      "title": "friend,"
+    },
+    {
+      "attachments": [],
+      "audio_sha256": "379839e430f4be4519d2d0c17d849736e4c372dab5d9ffe9ea493ccc79116133",
+      "audio_url": "audio/5c12d41390545a517d83425738e3e19258868ced31aafa6210a69708a42e1165.mp3",
+      "authored_text": "with the addition of nudisco ai radio, i figured i'd write out something lengthy just so our host, nudisco ai astra, could read it out with kokoro. 👍️\n\nnudisco ai is, first and foremost, a personal hobby, so some of the material here may not be suitable for all viewers (and listeners). proceed however suits you. it is mostly just mildly dark, dry, absurdist humor, me crying, and ponies — and it's usually one thing after the other, not one thing with another — though sometimes that is the case.\n\nanyway, i hope everypony is well, thriving, and overall living their best life.\n\nas for me, i am just a pony.\n\n— your faithful dev,\nnudisco ai doc.",
+      "content_hash": "54b23fe4fcfe5ab62c1de5a0136896621fac30ebcacc382a4cf10c1c63e1ddee",
+      "date": "2026-11-24T06:49:14-08:00",
+      "difficult_attachment": false,
+      "duration": 47.6517,
+      "edition": "regular",
+      "has_title": true,
+      "id": "post:20261124-064914-my-stars-8006",
+      "kind": "post",
+      "post_id": "20261124-064914-my-stars-8006",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261124-064914-my-stars-8006",
+      "speed": 1.5,
+      "title": "friend,"
+    },
+    {
       "announcement_text": "next, an untitled post from november 24, 2026. it includes an attachment labeled Trixie Trixie Tuesday GIF - Trixie Trixie tuesday Tuesday.",
       "attachments": [
         {
