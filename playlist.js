@@ -7511,6 +7511,94 @@ window.NUDISCO_PLAYLIST = {
       "kind": "music",
       "source_url": null,
       "title": "nudisco ai lofi"
+    },
+    {
+      "audio_sha256": "ea8e2e72565c0b66e28b474862b4d9404b76661748a7c62d9485e7774003b2d9",
+      "audio_url": "audio/ea8e2e72565c0b66e28b474862b4d9404b76661748a7c62d9485e7774003b2d9.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 3.2,
+      "id": "station-sound-little-constellation",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "little constellation"
+    },
+    {
+      "audio_sha256": "e6042db6fb1fc6870bd07146559d980daca7ac8f0b7a24cece8c6e82f892033a",
+      "audio_url": "audio/e6042db6fb1fc6870bd07146559d980daca7ac8f0b7a24cece8c6e82f892033a.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 6.5,
+      "id": "station-sound-cosmic-drift",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "cosmic drift"
+    },
+    {
+      "audio_sha256": "a8f58afdfc1eda4e8026dc36d8c476127f0ffe6523a326ee04b800eac20ed6a6",
+      "audio_url": "audio/a8f58afdfc1eda4e8026dc36d8c476127f0ffe6523a326ee04b800eac20ed6a6.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 12.0,
+      "id": "station-sound-station-ambience",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "station ambience"
+    },
+    {
+      "audio_sha256": "6a865eb045c8574244d17bf42dbed1736cdda236a6006bee718e7dee95280ef8",
+      "audio_url": "audio/6a865eb045c8574244d17bf42dbed1736cdda236a6006bee718e7dee95280ef8.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 6.0,
+      "id": "station-sound-quiet-transition",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "quiet transition"
+    },
+    {
+      "audio_sha256": "cb7e7cb3e5a94a9c0e15d5c195ac0a68ee3482fbfd5f2515447d41b830dd84cf",
+      "audio_url": "audio/cb7e7cb3e5a94a9c0e15d5c195ac0a68ee3482fbfd5f2515447d41b830dd84cf.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 8.0,
+      "id": "station-sound-grounding",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "grounding"
+    },
+    {
+      "audio_sha256": "55e13f8b458c64ad20b3a987d8787320c798c1428f31c752fc6eaacd9df8fe14",
+      "audio_url": "audio/55e13f8b458c64ad20b3a987d8787320c798c1428f31c752fc6eaacd9df8fe14.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 9.0,
+      "id": "station-sound-quiet-harmony",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "quiet harmony"
+    },
+    {
+      "audio_sha256": "f2c97b856cb264edebd0a45bc01732e741f236c44125a0c5ccd0ffd8baa217cd",
+      "audio_url": "audio/f2c97b856cb264edebd0a45bc01732e741f236c44125a0c5ccd0ffd8baa217cd.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 4.0,
+      "id": "station-sound-friendship",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "friendship"
+    },
+    {
+      "audio_sha256": "184b038ec18114dc5e505c6d98f607ee1bdadd34a7d54eeb4ec30f7dec52bcf5",
+      "audio_url": "audio/184b038ec18114dc5e505c6d98f607ee1bdadd34a7d54eeb4ec30f7dec52bcf5.mp3",
+      "credit": "Original synthesized audio · ChatGPT / nudisco ai",
+      "date": null,
+      "duration": 12.0,
+      "id": "station-sound-cosmic-stillness",
+      "kind": "station_sound",
+      "source_url": null,
+      "title": "cosmic stillness"
     }
   ]
 };

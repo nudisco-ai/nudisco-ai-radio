@@ -4,6 +4,64 @@ const byId = id => document.getElementById(id);
 byId("year").textContent = new Date().getFullYear();
 const audio = byId("audio");
 const musicTitle = "nudisco ai lofi";
+const originalSoundPalette = [
+  {
+    "id": "station-sound-little-constellation",
+    "title": "little constellation",
+    "duration": 3.2,
+    "sha": "ea8e2e72565c0b66e28b474862b4d9404b76661748a7c62d9485e7774003b2d9"
+  },
+  {
+    "id": "station-sound-cosmic-drift",
+    "title": "cosmic drift",
+    "duration": 6.5,
+    "sha": "e6042db6fb1fc6870bd07146559d980daca7ac8f0b7a24cece8c6e82f892033a"
+  },
+  {
+    "id": "station-sound-station-ambience",
+    "title": "station ambience",
+    "duration": 12.0,
+    "sha": "a8f58afdfc1eda4e8026dc36d8c476127f0ffe6523a326ee04b800eac20ed6a6"
+  },
+  {
+    "id": "station-sound-quiet-transition",
+    "title": "quiet transition",
+    "duration": 6.0,
+    "sha": "6a865eb045c8574244d17bf42dbed1736cdda236a6006bee718e7dee95280ef8"
+  }
+];
+const solfeggioSoundPalette = [
+  {
+    "id": "station-sound-grounding",
+    "title": "grounding",
+    "duration": 8.0,
+    "sha": "cb7e7cb3e5a94a9c0e15d5c195ac0a68ee3482fbfd5f2515447d41b830dd84cf"
+  },
+  {
+    "id": "station-sound-quiet-harmony",
+    "title": "quiet harmony",
+    "duration": 9.0,
+    "sha": "55e13f8b458c64ad20b3a987d8787320c798c1428f31c752fc6eaacd9df8fe14"
+  },
+  {
+    "id": "station-sound-friendship",
+    "title": "friendship",
+    "duration": 4.0,
+    "sha": "f2c97b856cb264edebd0a45bc01732e741f236c44125a0c5ccd0ffd8baa217cd"
+  },
+  {
+    "id": "station-sound-cosmic-stillness",
+    "title": "cosmic stillness",
+    "duration": 12.0,
+    "sha": "184b038ec18114dc5e505c6d98f607ee1bdadd34a7d54eeb4ec30f7dec52bcf5"
+  }
+];
+const stationSoundPalette = [...originalSoundPalette, ...solfeggioSoundPalette];
+// Weighted rotation across eligible ordinary breaks only. Theme remains primary.
+const stationSoundSchedule = ["theme", "original", "theme", "solfeggio", "theme", "original", "theme", "solfeggio", "theme", "original"];
+// Quiet harmony recurs twice as often as the other new sounds.
+const solfeggioSoundOrder = ["quiet-harmony", "grounding", "friendship", "quiet-harmony", "cosmic-stillness"].map(name => "station-sound-" + name);
+let stationSoundBreaks = 0, stationSoundCursor = 0, solfeggioSoundCursor = 0;
 const originalSite = "https://nudisco-ai.whoismister-e.workers.dev";
 const openingWords = "this is nudisco ai astra, speaking with kokoro.";
 const noticeWords = "there is difficult material attached to this post. you can visit the site to view it.";
@@ -119,7 +177,7 @@ const customExcerptId = /^custom-[a-f0-9]{32}(?:-audio)?$/;
 const segmentNames = {
   station_intro: "station introduction", post_intro: "post introduction", post: "nudisco ai reading",
   attachment_notice: "attachment notice", intermission: "intermission", feature_intermission: "extended intermission",
-  audio_excerpt: "intermission · audio excerpt", short_id: "station identification", music: "intermission · music"
+  audio_excerpt: "intermission · audio excerpt", short_id: "station identification", music: "intermission · music", station_sound: "intermission · sound"
 };
 let program;
 let current;
@@ -155,6 +213,112 @@ let asideBag = null;
 let segueBags = new Map();
 let pendingPassage = null;
 
+// Session-local editorial mix. No wall-clock sleep inference or persistent data.
+// Ratios are editorial targets; individual recordings and their lead-ins remain whole.
+const sessionTargets = [
+  [0, .45, .45, .10], [600, .45, .45, .10],
+  [1200, .30, .55, .15], [1800, .20, .65, .15],
+  [2400, .10, .70, .20]
+];
+let sessionSeconds = 0, accountedSeconds = 0, postDebt = 0;
+let hostQueue = [], hostPool = [], lastHostId = null;
+let sessionMix = false, postStreak = 0, hostStreak = 0, hostBlocks = 0;
+const postKinds = new Set(["post_intro", "post", "attachment_notice"]);
+const soundKinds = new Set(["music", "station_sound", "audio_excerpt"]);
+function sessionTarget(seconds) {
+  for (let i = 1; i < sessionTargets.length; i++) {
+    const a = sessionTargets[i-1], b = sessionTargets[i];
+    if (seconds <= b[0]) {
+      const f = Math.max(0, (seconds-a[0])/(b[0]-a[0]));
+      return a.slice(1).map((v,j) => v + f*(b[j+1]-v));
+    }
+  }
+  return sessionTargets[sessionTargets.length-1].slice(1);
+}
+function accountPlayback() {
+  if (!current || !audio.played) return;
+  // Played ranges count listened audio, not wall time or skipped seek gaps.
+  // Replayed portions of the same source count once per load.
+  let total = 0;
+  for (let i = 0; i < audio.played.length; i++) {
+    const span = audio.played.end(i)-audio.played.start(i);
+    if (Number.isFinite(span) && span > 0) total += span;
+  }
+  const delta = Math.max(0, total-accountedSeconds);
+  accountedSeconds = Math.max(accountedSeconds, total);
+  const [posts, host] = sessionTarget(sessionSeconds+delta/2);
+  sessionSeconds += delta;
+  if (!soundKinds.has(current.kind)) {
+    // A bounded running error prevents a single long track from monopolizing later choices.
+    const desired = posts/(posts+host);
+    postDebt = Math.max(-120, Math.min(120, postDebt + delta*((postKinds.has(current.kind) ? 1 : 0)-desired)));
+  }
+}
+function setupSessionMix() {
+  hostPool = [...program.breaks, ...program.features];
+  sessionMix = Boolean(program.cadence.break_every && program.posts.length &&
+    hostPool.filter(t => !soundKinds.has(t.kind)).length >= 4);
+}
+function takeHostBlock() {
+  if (!hostQueue.length) {
+    hostQueue = hostPool.slice();
+    for (let i=hostQueue.length-1; i>0; i--) {
+      const j=Math.floor(Math.random()*(i+1));
+      [hostQueue[i],hostQueue[j]]=[hostQueue[j],hostQueue[i]];
+    }
+  }
+  // One bag across all host material: no early repeats, with a soft late-session
+  // preference for substantive passages instead of brief announcements.
+  let candidates = hostQueue.filter(t => t.id !== lastHostId &&
+    !(soundKinds.has(current?.kind) && soundKinds.has(t.kind)));
+  if (!candidates.length) candidates = hostQueue.filter(t => !(soundKinds.has(current?.kind) && soundKinds.has(t.kind)));
+  if (!candidates.length) return null;
+  const depth = Math.min(1, Math.max(0, (sessionSeconds-600)/1800));
+  if (!hostBlocks || Math.random() < .25 + .60*depth) {
+    const substantial = candidates.filter(t => !soundKinds.has(t.kind) &&
+      (Object.hasOwn(passageGroups,t.id) || t.duration >= 30));
+    if (substantial.length) {
+      substantial.sort((a,b)=>b.duration-a.duration);
+      candidates = substantial.slice(0, Math.max(1, Math.ceil(substantial.length*(1-.6*depth))));
+    }
+  }
+  const track = candidates[0];
+  hostQueue.splice(hostQueue.indexOf(track),1);
+  lastHostId = track.id;
+  return track;
+}
+function continueSession(afterPost = false) {
+  const early = sessionSeconds < 1200;
+  const maxPosts = early ? 3 : 2;
+  const maxHost = early ? 3 : 5;
+  // Start with a post after the opening, then give Astra a proper segment immediately.
+  // Fairness caps also keep a very long reading from creating a run of short posts.
+  const wantHost = !hostBlocks || postStreak >= maxPosts ||
+    (hostStreak < maxHost && postDebt >= 0);
+  if (wantHost && hostStreak < maxHost) {
+    const track = takeHostBlock();
+    if (track) {
+      lastBreak = lastAnnouncement = completions;
+      playIntermission(track);
+      return;
+    }
+  }
+  // Keep the existing optional ID/aside rules on the way to another post.
+  // Later on, use the longer host library rather than extra micro-announcements.
+  if (afterPost && early) {
+    const {short_id_every} = program.cadence;
+    if (program.shortId && short_id_every && completions % short_id_every === 0 &&
+        completions - lastAnnouncement >= 2) {
+      lastAnnouncement = completions;
+      show(program.shortId, true);
+      return;
+    }
+    const aside = asideAfterReading();
+    if (aside) { show(aside, true); return; }
+  }
+  takePost(true);
+}
+
 function setupSegues() {
   for (const group of new Set(Object.values(segueGroups))) {
     const tracks = program.segues.filter(t => segueGroups[t.id] === group);
@@ -163,6 +327,7 @@ function setupSegues() {
 }
 
 function playIntermission(track) {
+  if (sessionMix) { hostBlocks++; hostStreak++; postStreak = 0; }
   // Only known research passages need a spoken introduction. Station IDs,
   // prayers (which introduce themselves), and asides are left alone.
   const group = Object.hasOwn(passageGroups, track.id) ? passageGroups[track.id] : null;
@@ -292,6 +457,12 @@ function parseProgram(manifest) {
       check(!index.has(track.post_id));
       index.set(track.post_id, track);
     }
+    if (track.kind === "station_sound") {
+      const expected = stationSoundPalette.find(s => s.id === track.id);
+      check(expected && track.title === expected.title && track.duration === expected.duration &&
+        track.audio_sha256 === expected.sha && track.audio_url === "audio/" + expected.sha + ".mp3" &&
+        track.source_url == null && track.date == null && !Object.hasOwn(track, "excerpt_id"));
+    }
     if (track.kind === "music") check(track.id === "lofi-nudisco" && (track.title === musicTitle || track.title === "lofi nudisco") && track.duration === 9);
     if (track.id.startsWith("custom-") || track.kind === "audio_excerpt" || Object.hasOwn(track, "excerpt_id")) {
       check(typeof track.title === "string" && track.title.trim() &&
@@ -313,7 +484,7 @@ function parseProgram(manifest) {
     }
     if (track.kind === "attachment_notice") check(track.edition === "regular" && validPostLink(track) && track.announcement_text === noticeWords);
     if (track.kind === "post") check(typeof track.authored_text === "string" && track.authored_text.trim());
-    else if (track.kind !== "music" && track.kind !== "audio_excerpt") check(typeof track.announcement_text === "string" && track.announcement_text.trim());
+    else if (track.kind !== "music" && track.kind !== "audio_excerpt" && track.kind !== "station_sound") check(typeof track.announcement_text === "string" && track.announcement_text.trim());
   }
   for (const id of requestedExcerpts) check(excerpts.has(id));
   for (const id of excerpts.keys()) check(!id.endsWith("-audio") || requestedExcerpts.has(id));
@@ -324,6 +495,12 @@ function parseProgram(manifest) {
   const breaks = tracks.filter(t => (t.kind === "intermission" && !isAside(t) && !isSegue(t)) || (t.kind === "audio_excerpt" && !requestedExcerpts.has(t.id)));
   const shortIds = groups.get("short_id");
   const music = groups.get("music");
+  const sounds = stationSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
+  const originalSounds = sounds.filter(t => originalSoundPalette.some(s => s.id === t.id));
+  const solfeggioSounds = sounds.filter(t => solfeggioSoundPalette.some(s => s.id === t.id));
+  // Accept complete older v1 programs too (e.g. an in-flight old playlist). Reject partial groups.
+  check(!sounds.length || (music.length === 1 && originalSounds.length === originalSoundPalette.length &&
+    (!solfeggioSounds.length || solfeggioSounds.length === solfeggioSoundPalette.length)));
   check(stations.length === 1 && stations[0].announcement_text.startsWith(openingWords));
   check(bodies.length === intros.size && shortIds.length <= 1 && music.length <= 1);
 
@@ -349,7 +526,7 @@ function parseProgram(manifest) {
     check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
   return {opening:stations[0], posts, breaks, asides, segues, features:groups.get("feature_intermission"),
-    shortId:shortIds[0], music:music[0], excerpts, cadence};
+    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, excerpts, cadence};
 }
 
 function arrange(after = -1, omitCurrent = false) {
@@ -372,6 +549,7 @@ function arrange(after = -1, omitCurrent = false) {
 }
 
 function takePost(autoplay) {
+  if (sessionMix) { postStreak++; hostStreak = 0; }
   if (chosenFirst !== null) {
     currentPost = chosenFirst;
     chosenFirst = null;
@@ -396,6 +574,7 @@ function selectPost(index) {
     return;
   }
   currentPost = lastPost = index;
+  if (sessionMix) { postStreak++; hostStreak = 0; }
   show(program.posts[index].intro, playing);
 }
 
@@ -500,7 +679,7 @@ function failed() {
     show(passage, playing);
     return;
   }
-  if (["music", "audio_excerpt", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
+  if (["music", "station_sound", "audio_excerpt", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
     const autoplay = playing;
     takePost(autoplay);
     message("the break was unavailable. continuing with the next post.");
@@ -536,6 +715,7 @@ function readout(post) {
   } else {
     let details = "astra · speaking with kokoro";
     if (current.kind === "music") details = "musical excerpt · 9 seconds";
+    if (current.kind === "station_sound") details = "quiet sound · " + current.duration + " seconds";
     if (current.kind === "audio_excerpt") details = "audio excerpt · 9 seconds";
     byId("details").textContent = current.credit ? details + " · " + current.credit : details;
   }
@@ -567,6 +747,8 @@ function readout(post) {
 }
 
 function show(track, autoplay) {
+  accountPlayback();
+  accountedSeconds = 0;
   if (!isSegue(track)) pendingPassage = null;
   ++attempt;
   playing = false;
@@ -608,6 +790,7 @@ function intermissionAfterReading(duration) {
 
 function finish() {
   if (!playing || !audio.ended) return;
+  accountPlayback();
   switch (current.kind) {
     case "station_intro":
       if (program.posts.length) takePost(true);
@@ -625,6 +808,7 @@ function finish() {
         show(program.posts[currentPost].notice, true);
         return;
       }
+      if (sessionMix) { continueSession(true); return; }
       const {break_every, short_id_every} = program.cadence;
       const intermission = intermissionAfterReading(current.duration);
       if (intermission) {
@@ -648,6 +832,9 @@ function finish() {
       }
       break;
     }
+    case "attachment_notice":
+      if (sessionMix) { continueSession(true); return; }
+      break;
     case "intermission":
     case "feature_intermission": {
       // Asides are speech-only, not musical breaks. They do not earn, reset,
@@ -661,7 +848,21 @@ function finish() {
         }
         break;
       }
-      const clip = current.excerpt_id ? program.excerpts.get(current.excerpt_id) : program.music;
+      let clip = current.excerpt_id ? program.excerpts.get(current.excerpt_id) : program.music;
+      // Replace, never stack. Paired audio, asides, segues and features are unchanged.
+      if (current.kind === "intermission" && !current.excerpt_id && clip && program.sounds?.length) {
+        if (program.solfeggioSounds?.length) {
+          const family = stationSoundSchedule[stationSoundBreaks++ % stationSoundSchedule.length];
+          if (family === "original") clip = program.sounds[stationSoundCursor++ % program.sounds.length];
+          if (family === "solfeggio") {
+            const id = solfeggioSoundOrder[solfeggioSoundCursor++ % solfeggioSoundOrder.length];
+            clip = program.solfeggioSounds.find(t => t.id === id) || clip;
+          }
+        } else if (++stationSoundBreaks % 3 === 0) {
+          // Older v1 playlist: preserve its original cadence.
+          clip = program.sounds[stationSoundCursor++ % program.sounds.length];
+        }
+      }
       if (clip) {
         show(clip, true);
         return;
@@ -669,7 +870,8 @@ function finish() {
       break;
     }
   }
-  takePost(true);
+  if (sessionMix) continueSession();
+  else takePost(true);
 }
 
 function setVolume() {
@@ -709,6 +911,7 @@ async function load() {
       return;
     }
     setupMixedRotation();
+    setupSessionMix();
     setupAsides();
     setupSegues();
     arrange();
@@ -726,7 +929,7 @@ async function load() {
 
 byId("tune").addEventListener("click", () => {
   if (!playing) {
-    if (audio.error) audio.load();
+    if (audio.error) { accountPlayback(); accountedSeconds = 0; audio.load(); }
     play();
   } else {
     ++attempt;
