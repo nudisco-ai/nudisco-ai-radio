@@ -1395,7 +1395,21 @@ function startOver() {
 function rememberInit() {
   const value=rememberRead(); rememberToken=value?.token ?? null; rememberPaint();
   const dialog=byId("remember-dialog");
-  byId("start-over").addEventListener("click",startOver);
+  const resetDialog=byId("start-over-dialog");
+  byId("start-over").addEventListener("click",()=>{
+    if (!program || !current || resetDialog.open) return;
+    if (typeof resetDialog.showModal === "function" && typeof resetDialog.close === "function") {
+      resetDialog.showModal();
+    } else if (window.confirm("start over? this will return you to the beginning of the radio and replace your saved playback bookmark, if enabled.")) {
+      startOver();
+    }
+  });
+  byId("start-over-no").addEventListener("click",()=>{if (resetDialog.open) resetDialog.close();});
+  byId("start-over-ok").addEventListener("click",()=>{
+    if (!resetDialog.open) return;
+    resetDialog.close();
+    startOver();
+  });
   byId("remember-toggle").addEventListener("click",()=>{
     rememberStatus("");
     if (rememberToken) {

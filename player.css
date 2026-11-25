@@ -146,3 +146,53 @@ body[data-playing="true"] .state::before { background: currentColor; }
 .astra-app #remember-toggle, .astra-app #start-over { flex: 1 1 auto; border-radius: 16px; background: var(--surface); }
 .astra-app #remember-dialog { background: var(--surface); }
 .astra-app #remember-dialog button { border-radius: 12px; background: var(--surface); }
+
+/* start over confirmation */
+#start-over-dialog button { min-height: 44px; font: inherit; font-size: .8rem; color: var(--signal); background: var(--bg); border: 1px solid var(--line); padding: 7px 12px; cursor: pointer; }
+#start-over-dialog { box-sizing: border-box; width: min(92vw, 430px); max-height: 85vh; overflow: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--line); padding: 20px; }
+#start-over-dialog::backdrop { background: #000000bb; }
+#start-over-dialog h2 { font-size: 1.15rem; margin: 0 0 12px; }
+#start-over-dialog p { font-size: .9rem; margin: 10px 0; }
+#start-over-dialog .remember-note { font-size: .75rem; color: var(--signal); }
+.astra-app #start-over-dialog { background: var(--surface); }
+.astra-app #start-over-dialog button { border-radius: 12px; background: var(--surface); }
+#start-over-no, #start-over-ok { flex: 1; }
+
+/* Match radio controls across rows without changing their palette or behavior. */
+body:not(.astra-app) .transport { --radio-control-gap: 12px; }
+body:not(.astra-app) .transport .buttons,
+body:not(.astra-app) .transport .remember-row { gap: var(--radio-control-gap); align-items: stretch; }
+body:not(.astra-app) .transport .buttons > button,
+body:not(.astra-app) .transport .remember-row > button:is(#remember-toggle, #start-over) {
+  flex: 0 0 min(9rem, calc((100% - var(--radio-control-gap)) / 2));
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 380px) {
+  body:not(.astra-app) .transport { --radio-control-gap: 8px; }
+}
+.astra-app .radio-actions,
+.astra-app .remember-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  align-items: stretch;
+}
+.astra-app .radio-actions { margin-bottom: 9px; }
+.astra-app .remember-row { margin-top: 0; }
+.astra-app .remember-row > button:is(#remember-toggle, #start-over) {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: .82rem;
+  font-weight: 550;
+  line-height: 1.45;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
