@@ -27,6 +27,88 @@
       "title": "station introduction"
     },
     {
+      "announcement_text": "published november 25, 2026, a post titled nudisco ai log.",
+      "attachments": [],
+      "audio_sha256": "26892f8a70d2c29c1f1f2104a5416b3dc1212e01fc8f8324680c468159185d61",
+      "audio_url": "audio/627e1dee102cfdae91cebd4f23fc4a850444e6c1b272b6a5d7285883f87a4f68.mp3",
+      "content_hash": "6d0e954582e2e31ad557a8b21dfa30bb1ec5dec7bec38470a0233d165255b2bc",
+      "date": "2026-11-25T07:30:58-08:00",
+      "difficult_attachment": false,
+      "duration": 7.0067,
+      "edition": "regular",
+      "has_title": true,
+      "id": "intro:20261125-073058-nudisco-ai-log-8512",
+      "kind": "post_intro",
+      "post_id": "20261125-073058-nudisco-ai-log-8512",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261125-073058-nudisco-ai-log-8512",
+      "speed": 1.5,
+      "title": "nudisco ai log"
+    },
+    {
+      "attachments": [],
+      "audio_sha256": "4617630f74eafaac488aff82c1a5333bc630c3dba090bdf020fc8bace4883906",
+      "audio_url": "audio/190f30ba6f8b90a4fd7d5788c66c0f6766641dbfb1fa8c5fa5665b9a39cc0897.mp3",
+      "authored_text": "by nov11 2026: nudisco ai, astra, lowlight.jpeg, ζεδoris\n\nnov12+: /void, /machine-map, neodisco\n\nnov14+: /time, /magic, neodisco /timetravel\n\nnov17+: /space, our town, truestory.xml, research\n\nnov19: terms & conditions, click stuff\n\nnov20+: colors, other\n\nnov23: nudisco api and mcp, nudisco ai radio\n\nnov24: astra transmissions, nudisco ai radio pwa, soundscape\n\nnov25: more astra, more soundscape, more /space",
+      "content_hash": "055a257c971a4e099aece110e2203436313f5f24d7be382dd0452051687f6e8b",
+      "date": "2026-11-25T07:30:58-08:00",
+      "difficult_attachment": false,
+      "duration": 52.1813,
+      "edition": "regular",
+      "has_title": true,
+      "id": "post:20261125-073058-nudisco-ai-log-8512",
+      "kind": "post",
+      "post_id": "20261125-073058-nudisco-ai-log-8512",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261125-073058-nudisco-ai-log-8512",
+      "speed": 1.5,
+      "title": "nudisco ai log"
+    },
+    {
+      "announcement_text": "the next post is titled post. it includes a file named plainity-wednesday dot gif.",
+      "attachments": [
+        {
+          "kind": "filename",
+          "value": "plainity-wednesday.gif"
+        }
+      ],
+      "audio_sha256": "a46fa0ebfbe938d24b259505dec8cc2b1aaec7ff2f0d031a0ca8e4cd7068d2b2",
+      "audio_url": "audio/6105b15ae63d7a2041cc007e9208efa1583c16d848a82528f6267c536785d27e.mp3",
+      "content_hash": "cc3ee5dbd6e6ff1e6db5991fdd0937e3f2e780d8ce797a04792ad573615846d1",
+      "date": "2026-11-25T06:37:32-08:00",
+      "difficult_attachment": false,
+      "duration": 6.323,
+      "edition": "regular",
+      "has_title": true,
+      "id": "intro:20261125-063732-titled-post-b231",
+      "kind": "post_intro",
+      "post_id": "20261125-063732-titled-post-b231",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261125-063732-titled-post-b231",
+      "speed": 1.5,
+      "title": "titled post"
+    },
+    {
+      "attachments": [
+        {
+          "kind": "filename",
+          "value": "plainity-wednesday.gif"
+        }
+      ],
+      "audio_sha256": "3d1778e7c006c4cb874d4cfadef70df05774c8d2e92e98c322b5ddc4cd2cb504",
+      "audio_url": "audio/836cefdde76d3fffe592533f2c434263ce80b613c3986bbbc517653923f15426.mp3",
+      "authored_text": "have a good day.",
+      "content_hash": "6cc01719c88e1bc52fa4c71f49ef31dc782480c7de734511f7c0279955d1bb83",
+      "date": "2026-11-25T06:37:32-08:00",
+      "difficult_attachment": false,
+      "duration": 1.7877,
+      "edition": "regular",
+      "has_title": true,
+      "id": "post:20261125-063732-titled-post-b231",
+      "kind": "post",
+      "post_id": "20261125-063732-titled-post-b231",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261125-063732-titled-post-b231",
+      "speed": 1.5,
+      "title": "titled post"
+    },
+    {
       "announcement_text": "the next post is a great and powerful closing statement. it includes an attachment.",
       "attachments": [
         {
