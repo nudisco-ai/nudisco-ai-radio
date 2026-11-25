@@ -43,3 +43,8 @@ button:disabled {opacity:.45;}
 dialog {width:min(92vw,430px);border:1px solid var(--line);border-radius:24px;padding:22px;background:#21172e;color:var(--ink);}.dialog-head {display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;}.dialog-head h2 {font-size:1.3rem;}dialog::backdrop {background:#08050bbb;}.sleep-options {display:flex;flex-wrap:wrap;gap:8px;margin:17px 0;}.sleep-options button {flex:1 0 28%;}
 @media(max-width:360px){.app-header,.app-main{width:calc(100% - 26px)}.art{max-width:270px}.app-transport{gap:16px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+/* App viewport gestures: allow panning, not double-tap or pinch zoom. */
+html, body.astra-app, body.astra-app * {touch-action:pan-x pan-y;}
+/* Prevent iOS focus zoom on the library search field. */
+#search-library {font-size:16px;}

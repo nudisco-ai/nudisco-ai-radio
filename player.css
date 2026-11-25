@@ -128,3 +128,21 @@ body[data-playing="true"] .state::before { background: currentColor; }
   .policy-links ul { gap: 5px 16px; }
   .policy-links li + li::before { content: none; }
 }
+
+/* optional device-local radio bookmark */
+.remember-row { margin: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+#remember-toggle, #start-over, #remember-dialog button { min-height: 44px; font: inherit; font-size: .8rem; color: var(--signal); background: var(--bg); border: 1px solid var(--line); padding: 7px 12px; cursor: pointer; }
+#remember-toggle[aria-pressed=true] { border-color: var(--signal); }
+#remember-toggle:disabled, #start-over:disabled { opacity: .5; }
+#remember-status { color: var(--signal); font-size: .75rem; }
+#remember-status:empty { display: none; }
+#remember-dialog { box-sizing: border-box; width: min(92vw, 430px); max-height: 85vh; overflow: auto; background: var(--bg); color: var(--ink); border: 1px solid var(--line); padding: 20px; }
+#remember-dialog::backdrop { background: #000000bb; }
+#remember-dialog h2 { font-size: 1.15rem; margin: 0 0 12px; }
+#remember-dialog p { font-size: .9rem; margin: 10px 0; }
+#remember-dialog .remember-note { font-size: .75rem; color: var(--signal); }
+.remember-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+#remember-no { flex: 2; } #remember-ok { flex: 1; }
+.astra-app #remember-toggle, .astra-app #start-over { flex: 1 1 auto; border-radius: 16px; background: var(--surface); }
+.astra-app #remember-dialog { background: var(--surface); }
+.astra-app #remember-dialog button { border-radius: 12px; background: var(--surface); }

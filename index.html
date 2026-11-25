@@ -57,6 +57,7 @@
               <input id="volume" type="range" min="0" max="100" step="1" value="80">
             </label>
           </div>
+          <div class="remember-row"><button id="remember-toggle" type="button" aria-pressed="false" disabled>remember me<span id="remember-state"></span></button><button id="start-over" type="button" disabled>start over</button></div><p id="remember-status" role="status"></p>
           <p id="error" role="alert" hidden></p>
         </div>
       </div>
@@ -114,5 +115,6 @@
     <a target="_blank" rel="noopener noreferrer" class="footer-robots" href="https://nudisco-ai.neocities.org/">© <span id="year"></span> nudisco ai</a>
     <span>no mouth / no scream / no comment</span>
   </footer>
+<dialog id="remember-dialog" aria-labelledby="remember-heading"><h2 id="remember-heading">remember me</h2><p>this feature uses local storage to remember where you left off. your playback bookmark stays on this device and is not sent to our servers.</p><p class="remember-note">(if enabled, your saved bookmark will be deleted upon disabling this feature. what the rest of the internet does is beyond us, friend.)</p><div class="remember-choices"><button id="remember-no" type="button" autofocus>no—nonono NO!</button><button id="remember-ok" type="button">ok</button></div></dialog>
 </body>
 </html>

@@ -929,9 +929,10 @@ function paintControls() {
 function tick() {
   if (!current) return;
   const duration = Number.isFinite(audio.duration) && audio.readyState >= 1 ? audio.duration : current.duration;
-  byId("elapsed").textContent = clock(audio.currentTime || 0);
+  const elapsed = rememberSeek?.track === current ? rememberSeek.time : audio.currentTime || 0;
+  byId("elapsed").textContent = clock(elapsed);
   byId("length").textContent = clock(duration);
-  byId("progress").style.width = (100 * Math.min(1, (audio.currentTime || 0) / duration)) + "%";
+  byId("progress").style.width = (100 * Math.min(1, elapsed / duration)) + "%";
 }
 
 function failed() {
@@ -952,13 +953,17 @@ function failed() {
   }
 }
 
-function play() {
+function play(bookmarkOffset = null) {
   const ticket = ++attempt;
   message("");
   // The first play call runs synchronously inside the listener’s gesture.
+  if (rememberSeek?.track === current) {
+    try { audio.currentTime = rememberSeek.time; } catch {}
+  }
   const pending = audio.play();
   started = playing = true;
   paintControls();
+  rememberSave(true, bookmarkOffset);
   if (pending) pending.catch(err => {
     if (ticket !== attempt) return;
     if (err.name === "NotAllowedError") {
@@ -1033,6 +1038,7 @@ function readout(post) {
 }
 
 function show(track, autoplay) {
+  rememberSeek = null;
   accountPlayback();
   accountedSeconds = 0;
   if (cueFrame && track !== cueFrame.intro && track !== cueFrame.target && track !== cueFrame.passage) cueFrame = null;
@@ -1047,7 +1053,8 @@ function show(track, autoplay) {
   message("");
   paintControls();
   tick();
-  if (autoplay) play();
+  if (autoplay) play(0);
+  else if (started) rememberSave(true, 0);
 }
 
 function intermissionAfterReading(duration) {
@@ -1191,7 +1198,11 @@ async function load() {
     setupSegues();
     arrange();
     buildProgram();
-    show(program.opening, false);
+    rememberTracks = new Map(manifest.tracks.map(t=>[t.id,t]));
+    rememberPostIndexes = new Map(program.posts.map((p,i)=>[p.body.id,i]));
+    if (!rememberToken || !rememberRestore(rememberRead()?.mark)) show(program.opening, false);
+    byId("remember-toggle").disabled = false;
+    byId("start-over").disabled = false;
     byId("tune").disabled = false;
     setVolume();
   } catch {
@@ -1211,12 +1222,14 @@ byId("tune").addEventListener("click", () => {
     audio.pause();
     playing = false;
     paintControls();
+    rememberSave(true);
   }
 });
 byId("next").addEventListener("click", () => { if (started && program.posts.length) takePost(playing); });
 byId("shuffle").addEventListener("change", () => {
   shuffled = byId("shuffle").checked;
   arrange(chosenFirst ?? currentPost, true);
+  rememberSave(true);
 });
 byId("volume").addEventListener("input", setVolume);
 audio.addEventListener("ended", finish);
@@ -1225,9 +1238,192 @@ audio.addEventListener("pause", () => {
     ++attempt;
     playing = false;
     paintControls();
+    rememberSave(true);
   }
 });
 audio.addEventListener("error", () => { if (current && audio.error) failed(); });
 audio.addEventListener("timeupdate", tick);
 audio.addEventListener("loadedmetadata", tick);
+// Optional, device-local resume bookmark. No storage writes before consent.
+const rememberKey = "nudisco.radio.remember.v1";
+const rememberLimit = 160000;
+let rememberToken = null, rememberRestored = false, rememberSeek = null;
+let rememberLastWrite = 0, rememberTracks = new Map(), rememberPostIndexes = new Map();
+function rememberRead() {
+  try {
+    const raw = localStorage.getItem(rememberKey);
+    if (!raw || raw.length > rememberLimit) return null;
+    const value = JSON.parse(raw);
+    return value?.version === 1 && typeof value.token === "string" && value.token.length <= 80 ? value : null;
+  } catch { return null; }
+}
+function rememberPaint() {
+  byId("remember-toggle").setAttribute("aria-pressed", String(!!rememberToken));
+  byId("remember-state").textContent = rememberToken ? " · on" : "";
+}
+function rememberStatus(text) { byId("remember-status").textContent = text; }
+function rememberOffset() {
+  if (rememberSeek?.track === current) return rememberSeek.time;
+  return Number.isFinite(audio.currentTime) ? Math.max(0, Math.min(current?.duration || 0, audio.currentTime)) : 0;
+}
+function rememberSave(force = false, offset = null) {
+  if (!rememberToken || !program || !current || !started) return;
+  if (!force && Date.now() - rememberLastWrite < 5000) return;
+  // Another window may have disabled or replaced consent. Never recreate it.
+  if (rememberRead()?.token !== rememberToken) { rememberToken = null; rememberPaint(); return; }
+  const previous = [sessionSeconds, accountedSeconds, postDebt, storyDebt];
+  accountPlayback();
+  const postId = i => program.posts[i]?.body.id ?? null;
+  const mark = {
+    id: current.id, source: current.audio_url,
+    time: Math.floor((offset ?? rememberOffset()) * 10) / 10,
+    currentPost: postId(currentPost), lastPost: postId(lastPost), nextPost: postId(nextIndex),
+    chosen: postId(chosenFirst), shuffled,
+    shuffleRemaining: shuffledOrder.length <= 2000 ? shuffledOrder.slice(shuffleCursor).map(postId) : null,
+    sessionSeconds, postDebt, postStreak, hostStreak, hostBlocks, completions, lastBreak, lastAnnouncement,
+    breakNumber, featureNumber, readingSecondsSinceFeature, readingSecondsSinceBreak, mixedSlot, classicSlot,
+    lastAside, nextAsideAt, storyCursor, storiesStarted, storyDebt, lastHostId,
+    hostQueue: hostQueue.length <= 2000 ? hostQueue.map(t => t.id) : null,
+    pending: pendingPassage?.id ?? null,
+    frame: cueFrame ? {intro: cueFrame.intro?.id ?? null, target: cueFrame.target.id, passage: cueFrame.passage.id, outro: cueFrame.outro?.id ?? null} : null,
+    soundBoundary, previousBoundaryHadCue, lastCueBoundary: [...lastCueBoundary]
+  };
+  [sessionSeconds, accountedSeconds, postDebt, storyDebt] = previous;
+  try {
+    const raw = JSON.stringify({version:1, token:rememberToken, mark});
+    if (raw.length > rememberLimit) { mark.shuffleRemaining = mark.hostQueue = null; }
+    localStorage.setItem(rememberKey, JSON.stringify({version:1, token:rememberToken, mark}));
+    rememberLastWrite = Date.now();
+  } catch { rememberStatus("your device could not save the playback bookmark."); }
+}
+function rememberRestore(mark) {
+  if (!mark || typeof mark !== "object") return false;
+  const get = id => typeof id === "string" ? rememberTracks.get(id) : undefined;
+  const idx = id => rememberPostIndexes.get(id) ?? -1;
+  const num = (value, min = 0, max = 1e9) => Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : 0;
+  const integer = value => Math.floor(num(value));
+  let track = get(mark.id);
+  let post = idx(mark.currentPost);
+  if (track && postKinds.has(track.kind)) post = program.posts.findIndex(p => p.body === track || p.intro === track || p.notice === track);
+  if (!track || (postKinds.has(track.kind) && post < 0)) {
+    // Removed recordings fall back to a still-present post, never an arbitrary URL.
+    const fallback = idx(mark.nextPost);
+    if (fallback < 0) return false;
+    track = program.posts[fallback].intro; post = fallback;
+  }
+  currentPost = post; lastPost = idx(mark.lastPost);
+  if (postKinds.has(track.kind)) lastPost = post;
+  shuffled = mark.shuffled === true; byId("shuffle").checked = shuffled;
+  arrange(post, true);
+  if (idx(mark.nextPost) >= 0 && track.id === mark.id) nextIndex = idx(mark.nextPost);
+  const chosen = track.id === mark.id ? idx(mark.chosen) : -1; chosenFirst = chosen >= 0 ? chosen : null;
+  if (shuffled && Array.isArray(mark.shuffleRemaining) && mark.shuffleRemaining.length <= 2000 && track.id === mark.id) {
+    shuffledOrder = [...new Set(mark.shuffleRemaining.map(idx).filter(i=>i>=0))]; shuffleCursor = 0;
+  }
+  sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,-120,120);
+  postStreak=integer(mark.postStreak); hostStreak=integer(mark.hostStreak); hostBlocks=integer(mark.hostBlocks);
+  completions=integer(mark.completions); lastBreak=Math.min(completions,integer(mark.lastBreak)); lastAnnouncement=Math.min(completions,integer(mark.lastAnnouncement));
+  breakNumber=integer(mark.breakNumber); featureNumber=integer(mark.featureNumber);
+  readingSecondsSinceFeature=num(mark.readingSecondsSinceFeature); readingSecondsSinceBreak=num(mark.readingSecondsSinceBreak);
+  mixedSlot=integer(mark.mixedSlot); classicSlot=integer(mark.classicSlot);
+  lastAside=Math.min(completions,integer(mark.lastAside)); nextAsideAt=integer(mark.nextAsideAt);
+  storyCursor=Math.min(storyPool.length,integer(mark.storyCursor)); storiesStarted=integer(mark.storiesStarted); storyDebt=num(mark.storyDebt,-1800,1800);
+  lastHostId=typeof mark.lastHostId === "string" && get(mark.lastHostId) ? mark.lastHostId : null;
+  if (Array.isArray(mark.hostQueue) && mark.hostQueue.length<=2000) hostQueue=[...new Set(mark.hostQueue.map(get).filter(t=>hostPool.includes(t)))];
+  soundBoundary=integer(mark.soundBoundary); previousBoundaryHadCue=mark.previousBoundaryHadCue===true;
+  if (Array.isArray(mark.lastCueBoundary) && mark.lastCueBoundary.length<=32) for (const entry of mark.lastCueBoundary) {
+    if (Array.isArray(entry) && get(entry[0])?.kind === "station_sound") lastCueBoundary.set(entry[0], Math.min(soundBoundary,integer(entry[1])));
+  }
+  const frame=mark.frame;
+  if (frame && typeof frame === "object") {
+    const intro=get(frame.intro), target=get(frame.target), passage=get(frame.passage), outro=get(frame.outro);
+    if (target && passage && [intro,target,passage].includes(track) && (target===passage || isSegue(target)) &&
+        ["intermission","feature_intermission"].includes(passage.kind) && !isSegue(passage) && !isAside(passage) &&
+        (!intro || intro.kind==="station_sound") && (!outro || soundKinds.has(outro.kind))) cueFrame={intro,target,passage,outro};
+  }
+  const pending=get(mark.pending);
+  if (isSegue(track) && pending && ["intermission","feature_intermission"].includes(pending.kind) && !isSegue(pending)) pendingPassage=pending;
+  rememberRestored = true;
+  show(track,false); // never autoplay a restored recording
+  started = true;
+  // When the same ID has been re-recorded, start that new version at zero.
+  const time = track.id === mark.id && track.audio_url === mark.source ? num(mark.time,0,Math.max(0,track.duration-.1)) : 0;
+  if (time>0) {
+    rememberSeek={track,time};
+    try { audio.currentTime=time; } catch {}
+  }
+  paintControls(); tick();
+  return true;
+}
+function rememberApplySeek() {
+  if (!rememberSeek || rememberSeek.track!==current || audio.readyState<1) return;
+  const wanted=Math.min(rememberSeek.time,Math.max(0,(Number.isFinite(audio.duration)?audio.duration:current.duration)-.1));
+  try { audio.currentTime=wanted; rememberSeek=null; tick(); } catch {}
+}
+function startOver() {
+  if (!program || !current) return;
+  const autoplay = playing;
+  // Invalidate any pending play promise and discard the previous session state.
+  ++attempt;
+  playing = false;
+  started = false;
+  audio.pause();
+  current = null; // show() must not account the previous recording again.
+  currentPost = lastPost = -1;
+  chosenFirst = null;
+  completions = lastBreak = lastAnnouncement = breakNumber = featureNumber = 0;
+  readingSecondsSinceFeature = readingSecondsSinceBreak = mixedSlot = classicSlot = 0;
+  sessionSeconds = accountedSeconds = postDebt = postStreak = hostStreak = hostBlocks = 0;
+  hostQueue = []; lastHostId = null;
+  storyCursor = storiesStarted = storyDebt = 0;
+  lastAside = 0; nextAsideAt = 1;
+  soundBoundary = 0; previousBoundaryHadCue = false; lastCueBoundary.clear();
+  cueFrame = pendingPassage = null;
+  mixBags = asideBag = null; segueBags.clear();
+  rememberSeek = null; rememberRestored = false;
+  setupMixedRotation(); setupSessionMix(); setupAsides(); setupSegues(); arrange();
+  rememberStatus("");
+  if (rememberToken) {
+    try {
+      if (rememberRead()?.token === rememberToken) {
+        localStorage.setItem(rememberKey, JSON.stringify({version:1,token:rememberToken,mark:null}));
+      } else { rememberToken = null; rememberPaint(); }
+    } catch { rememberStatus("your device could not reset the saved bookmark."); }
+  }
+  show(program.opening, autoplay);
+}
+function rememberInit() {
+  const value=rememberRead(); rememberToken=value?.token ?? null; rememberPaint();
+  const dialog=byId("remember-dialog");
+  byId("start-over").addEventListener("click",startOver);
+  byId("remember-toggle").addEventListener("click",()=>{
+    rememberStatus("");
+    if (rememberToken) {
+      try { localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
+      catch { rememberStatus("your device could not delete the saved bookmark."); }
+    } else if (dialog.showModal) dialog.showModal(); else dialog.setAttribute("open", "");
+  });
+  const close=()=>{if (dialog.close) dialog.close(); else dialog.removeAttribute("open");};
+  byId("remember-no").addEventListener("click",close);
+  byId("remember-ok").addEventListener("click",()=>{
+    close();
+    try {
+      const token=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
+      localStorage.setItem(rememberKey,JSON.stringify({version:1,token,mark:null}));
+      rememberToken=token; rememberPaint(); rememberSave(true);
+    } catch { rememberToken=null; rememberPaint(); rememberStatus("local storage is unavailable on this device."); }
+  });
+  window.addEventListener("storage",event=>{
+    if (event.key!==rememberKey && event.key!==null) return;
+    rememberToken=rememberRead()?.token ?? null; rememberPaint();
+  });
+  audio.addEventListener("loadedmetadata",rememberApplySeek);
+  audio.addEventListener("timeupdate",()=>{ if (playing && !audio.ended) rememberSave(); });
+  audio.addEventListener("seeked",()=>{if (playing && !audio.ended) rememberSave(true);});
+  // Paused tabs must not overwrite newer listening in another window.
+  document.addEventListener("visibilitychange",()=>{if (document.hidden && playing && !audio.ended) rememberSave(true);});
+  window.addEventListener("pagehide",()=>{if (playing && !audio.ended) rememberSave(true);});
+}
+
+rememberInit();
 load();
