@@ -65,7 +65,7 @@
   function initLibrary() {
     if (initialized || !program) return;
     const postItems = program.posts.map((p, index) => ({id:p.body.id, title:p.title, subtitle:'post · ' + (shortDate(p.body.date) || 'undated') + ' · ' + clock(p.intro.duration + p.body.duration),type:'post',index}));
-    const features = [...program.breaks, ...program.features].filter(t => ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:track.title || 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',track}));
+    const features = [...program.breaks, ...program.features].filter(t => ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? track.title.toLowerCase() : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',track}));
     items = [...postItems,...features]; lookup = new Map(items.map(i => [i.id,i])); initialized = true;
     if (read(shuffleKey,false) === true) { $('shuffle').checked = true; $('shuffle').dispatchEvent(new Event('change')); }
     $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));

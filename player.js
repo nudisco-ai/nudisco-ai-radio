@@ -969,8 +969,31 @@ function play() {
   });
 }
 
+// Presentation labels only: keep the original sound provenance in the playlist.
+const stationSoundLabels = Object.freeze({
+  "little-constellation": "chime",
+  "cosmic-drift": "cosmic sound",
+  "station-ambience": "ambient sound",
+  "quiet-transition": "transition sound",
+  "grounding": "low tone",
+  "quiet-harmony": "harmonic sound",
+  "friendship": "soft tone",
+  "cosmic-stillness": "cosmic sound"
+});
+function stationSoundLabel(track) {
+  const key = track.id.replace(/^station-sound-/, "").replace(/-intro$/, "");
+  return Object.hasOwn(stationSoundLabels, key) ? stationSoundLabels[key] : "quiet sound";
+}
+// Lowercase station-program titles at display time, never authored post text,
+// transcripts, or the titles of separately credited audio excerpts.
+function stationDisplayTitle(track) {
+  if (typeof track.title !== "string") return track.title;
+  return ["station_intro", "short_id", "intermission", "feature_intermission", "station_sound"].includes(track.kind)
+    ? track.title.toLowerCase() : track.title;
+}
+
 function readout(post) {
-  const cueTitle = current.id === "station-sound-little-constellation-intro" ? "little constellation outro" : current.id === "station-sound-little-constellation" && cueFrame?.intro === current ? "little constellation intro" : current.title;
+  const cueTitle = current.id === "station-sound-little-constellation-intro" ? "little constellation outro" : current.id === "station-sound-little-constellation" && cueFrame?.intro === current ? "little constellation intro" : stationDisplayTitle(current);
   byId("title").textContent = current.kind === "music" ? musicTitle : post ? post.title : (isAside(current) || isSegue(current)) ? "astra" : cueTitle || segmentNames[current.kind];
   if (post) {
     const date = shortDate(post.body.date);
@@ -978,9 +1001,9 @@ function readout(post) {
   } else {
     let details = isStory(current) ? "astra · through the mirror" : "astra · speaking with kokoro";
     if (current.kind === "music") details = "musical excerpt · 9 seconds";
-    if (current.kind === "station_sound") details = "quiet sound · " + current.duration + " seconds";
+    if (current.kind === "station_sound") details = stationSoundLabel(current) + " · " + current.duration + " seconds";
     if (current.kind === "audio_excerpt") details = "audio excerpt · 9 seconds";
-    byId("details").textContent = current.credit ? details + " · " + current.credit : details;
+    byId("details").textContent = current.kind !== "station_sound" && current.credit ? details + " · " + current.credit : details;
   }
 
   const source = byId("original");
