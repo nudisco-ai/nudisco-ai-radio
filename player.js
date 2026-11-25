@@ -57,11 +57,180 @@ const solfeggioSoundPalette = [
   }
 ];
 const stationSoundPalette = [...originalSoundPalette, ...solfeggioSoundPalette];
-// Weighted rotation across eligible ordinary breaks only. Theme remains primary.
-const stationSoundSchedule = ["theme", "original", "theme", "solfeggio", "theme", "original", "theme", "solfeggio", "theme", "original"];
-// Quiet harmony recurs twice as often as the other new sounds.
-const solfeggioSoundOrder = ["quiet-harmony", "grounding", "friendship", "quiet-harmony", "cosmic-stillness"].map(name => "station-sound-" + name);
-let stationSoundBreaks = 0, stationSoundCursor = 0, solfeggioSoundCursor = 0;
+const introSoundPalette = [
+  {
+    "id": "station-sound-station-ambience-intro",
+    "title": "station ambience intro",
+    "duration": 3.6,
+    "sha": "ed2b4ce19353720dd45844f2d772bc78484a703e37169c6bbf23f0beb6e5a18d"
+  },
+  {
+    "id": "station-sound-little-constellation-intro",
+    "title": "little constellation intro",
+    "duration": 5.3,
+    "sha": "e6d02827c3a2ed1053cfb4d0bc8e8520b285ae68e51963f0c2aab310910069ac"
+  },
+  {
+    "id": "station-sound-cosmic-drift-intro",
+    "title": "cosmic drift intro",
+    "duration": 3.4,
+    "sha": "4d51f72d6d33ed0ad63eb3f233219cb4b4807d0769010899993fe59a8c8a1c1b"
+  },
+  {
+    "id": "station-sound-quiet-transition-intro",
+    "title": "quiet transition intro",
+    "duration": 3.05,
+    "sha": "c9ba914c98e1848bc214d60c370b5c7d95d2d0e61a78d85bd24bc3f276acf206"
+  },
+  {
+    "id": "station-sound-grounding-intro",
+    "title": "grounding intro",
+    "duration": 3.2,
+    "sha": "9e249186f057c3a705e1a8b347dd64a5f2f188b91aef664709a362b7fc09af0c"
+  },
+  {
+    "id": "station-sound-quiet-harmony-intro",
+    "title": "quiet harmony intro",
+    "duration": 3.6,
+    "sha": "5dc0c7330b178af050fda39f156b6d369330f62259b16a55cf6041a62102362f"
+  },
+  {
+    "id": "station-sound-friendship-intro",
+    "title": "friendship intro",
+    "duration": 2.6,
+    "sha": "fa6841726a5af03fd5be459d06ca93c9e090a619c4bac46bd9da8b794cc2aa96"
+  },
+  {
+    "id": "station-sound-cosmic-stillness-intro",
+    "title": "cosmic stillness intro",
+    "duration": 4.0,
+    "sha": "530cb3190421d65699f84e8c9e7851166196d949409b14c54725b8de98a7e1fd"
+  }
+];
+// Editorial sound cues: known passages, not a rotating sound lottery.
+// Default to the familiar lofi theme; custom paired recordings take precedence.
+const editorialSoundCues = {
+  "custom-a9a18b9c61625d48a1e02f21860a811a": ["quiet-harmony", "quiet-transition"],
+  "custom-82a3ca62db4f53caab08f9d4818e03fa": ["friendship"],
+  "custom-20887a87483e57c4ad1889cb30e0b99a": ["little-constellation"],
+  "custom-9315a98a84c355348330aadb0756186b": ["quiet-harmony", "quiet-transition"],
+  "custom-077f9e5888115661b4b0bb205a020023": ["friendship"],
+  "custom-a00b0bcee27f5b72a7c164e4d1cd1765": ["quiet-harmony", "quiet-transition"],
+  "custom-66584f775cff5810beaa5e7a11a879d8": ["cosmic-drift"],
+  "custom-d8647292c66e5c518623a8c6b65e0d45": ["quiet-harmony", "quiet-transition"],
+  "custom-455e0a1512ec5e5ab094c0e1c2923061": ["cosmic-drift"],
+  "custom-ce9c24ef89c3559aba8c7a99164b33d3": ["quiet-harmony", "quiet-transition"],
+  "custom-8cce7fc6483454d08e819b11291b8ba3": ["quiet-harmony", "quiet-transition"],
+  "custom-f74799acbf3c57f780c0cbf832dfbbc0": ["cosmic-drift"],
+  "custom-ad439f19c7165103a70117bc7a197708": ["friendship"],
+  "custom-fff92760b3f450ee8cbc743ade21b056": ["little-constellation"],
+  "custom-ebe28907c17750da9d1beba7aff88b2c": ["friendship"],
+  "custom-baf88973b09d51ca93939ea22faeb868": ["quiet-harmony", "quiet-transition"],
+  "custom-a2b1932ced055cd6ab24c2c72d9f154d": ["quiet-harmony", "quiet-transition"],
+  "custom-522dd44da5195c5db83e066092fd8448": ["friendship"],
+  "custom-189fce236a6852f8b00ef3da22a65e37": ["quiet-harmony", "quiet-transition"],
+  "custom-f5be4bfe6ad3565b8cf2a766cd34697a": ["friendship"],
+  "custom-0b848e87f566507e8e6b0f1f62968eb4": ["little-constellation"],
+  "custom-365de3f971ba5f259fcaca8f57d5c880": ["quiet-harmony", "quiet-transition"],
+  "custom-0d20c8d0de195afa995fdb85a43c18f0": ["friendship"],
+  "custom-7c5359e51a025388a3149fef9d16e91d": ["quiet-harmony", "quiet-transition"],
+  "custom-56e979e4ca325da3b2ca3f07c074e477": ["quiet-harmony", "quiet-transition"],
+  "custom-d27b69ebb808518981a4db78057579bd": ["quiet-harmony", "quiet-transition"],
+  "custom-0bb28eef3816503c987cb7583a6039d9": ["friendship"],
+  "custom-455c2c77034b58dcb8d674507e47c8d1": ["cosmic-drift"],
+  "custom-2bfb55c33a94503b8c0021759e3cdea4": ["quiet-harmony", "quiet-transition"],
+  "custom-0ee2433f74d65b018c6e0c3910a1c3cd": ["friendship"],
+  "custom-6a5885ec568c53d999784369778c95d5": ["quiet-harmony", "quiet-transition"],
+  "custom-e0e98f77ea2053d4baedf58fa1bd2892": ["quiet-harmony", "quiet-transition"],
+  "custom-61f9b7cadf745a16abda638ff12a2ff6": ["quiet-harmony", "quiet-transition"],
+  "custom-2fba38e49717524d82071f815f2d8fc6": ["quiet-harmony", "quiet-transition"],
+  "custom-0e32ff7ee5795e85a2d34a080689f582": ["little-constellation"],
+  "custom-a543810ae49f578b9641bf678be518ee": ["quiet-harmony", "quiet-transition"],
+  "custom-63c6b25bbb785f45a487fd3a67f81c01": ["quiet-harmony", "quiet-transition"],
+  "custom-93a64384a97052058b50eb70080bbc17": ["quiet-harmony", "quiet-transition"],
+  "custom-7c825b65381a5dcaab860c9f58873f80": ["quiet-harmony", "quiet-transition"],
+  "custom-a6c2d6019f09549abf889e4a96b59392": ["friendship"],
+  "custom-c4643f05f4e55b039e7c88937f796ad8": ["cosmic-drift"],
+  "custom-6281fea6dd965d3db92a4d1c65553229": ["quiet-harmony", "quiet-transition"],
+  "custom-f7e1e67942d153b8919752d4104ac9d6": ["quiet-harmony", "quiet-transition"],
+  "custom-df743f2784c95ecc9f73d751f82e0f77": ["little-constellation"],
+  "custom-64a0ed96312254bf8c9f6f6d5e872d9c": ["friendship"],
+  "custom-7fecba604b5d52bf8c86f05e293b49b3": ["quiet-harmony", "quiet-transition"],
+  "custom-76476e9c5a5255549d605c38ca7d7a7e": ["friendship"],
+  "custom-c5af481c71485dd6ab8d8a4ee6e69e14": ["quiet-harmony", "quiet-transition"],
+  "custom-8a02333dee9357e3b647b14b142617d4": ["quiet-harmony", "quiet-transition"],
+  "custom-4e709d53646e58eabac1b49b696cf0db": ["quiet-harmony", "quiet-transition"],
+  "custom-1af2f2e1086d56f1a58e4cf531978bf9": ["quiet-harmony", "quiet-transition"],
+  "custom-874901edba5758bb8bc7f7140a8ee3a6": ["quiet-harmony", "quiet-transition"],
+  "custom-8dcd5d73a40a5cc7b92595adb269f244": ["friendship"],
+  "custom-4f259fcf035154609897d25c4c637be1": ["cosmic-drift"],
+  "custom-c8fd22f75f485f46b0f029d93682fe03": ["friendship"],
+  "custom-0a567e40ae5e592bbeea5205d95b6311": ["cosmic-drift"],
+  "custom-0b9e0c441eb3558ab8d7d54f5034e423": ["cosmic-stillness", "cosmic-drift"],
+  "custom-780e8bbe5a9955c7b46724a80aa52676": ["cosmic-drift"],
+  "custom-f3043f8fe28a5d2ab38113e52427f9f5": ["cosmic-stillness", "cosmic-drift"],
+  "custom-ed299bd0f5f35c339772283c2f9eafc7": ["cosmic-stillness", "cosmic-drift"],
+  "custom-564c562369945d3b90b8fe1f0cb30a9e": ["grounding", "quiet-transition"],
+  "custom-a316c82e9e1f53d095efeadadd6e9187": ["grounding", "quiet-transition"],
+  "custom-8f86c3b679865e1bb7107fc004c9c3bf": ["grounding", "quiet-transition"],
+  "custom-e0e9fad163665f9ca41b28cc4936b225": ["grounding", "quiet-transition"],
+  "custom-aa7362f4e7265f338b4e0b433b396951": ["grounding", "quiet-transition"],
+  "custom-ca7ffd3ed81756a0b24aa52292392335": ["quiet-transition"],
+  "custom-2272e754b41c55efa55e92d3260b8d06": ["quiet-transition"],
+  "custom-2b8cfe291010534c9daf18573c0a8f9e": ["quiet-transition"],
+  "custom-50aaa1ce96555b249bae1488b8fd0001": ["quiet-transition"],
+  "custom-981ddc8587285c42823c60419b05983e": ["quiet-transition"],
+  "custom-2fdb3ab32c915fed867a477d98b50a6b": ["quiet-transition"],
+  "friendship": ["friendship"],
+  "read-links": ["station-ambience"],
+  "booth-wave": ["little-constellation"],
+  "corvid-line": ["grounding", "quiet-transition"],
+  "feature-breezies": ["friendship"],
+  "feature-twilight-letters": ["friendship"],
+  "feature-card-artist": ["quiet-transition"],
+  "feature-second-raven": ["quiet-transition"],
+  "feature-biscuit-note": ["little-constellation"],
+};
+let soundBoundary = 0, previousBoundaryHadCue = false;
+const lastCueBoundary = new Map();
+function soundChoices(track) {
+  if (typeof isStory === "function" && isStory(track)) return ["quiet-transition"];
+  const assigned = Object.hasOwn(editorialSoundCues, track.id) ? editorialSoundCues[track.id] : null;
+  if (assigned) {
+    // Reserve the longest stillness cue for a substantial completed passage.
+    return track.duration >= 90 ? assigned : assigned.filter(name => name !== "cosmic-stillness");
+  }
+  const text = track.announcement_text || "";
+  // Also recognize a manually imported prayer by its actual spoken framing.
+  if (/^(?:a line from|from) the prayer of the corvid circle\b/i.test(text.trim()) && /\bamen[.!]?\s*$/i.test(text))
+    return ["grounding", "quiet-transition"];
+  // Known research families provide a conservative fallback for catalog revisions.
+  const group = Object.hasOwn(passageGroups, track.id) ? passageGroups[track.id] : null;
+  if (group === "harmony") return ["quiet-harmony", "quiet-transition"];
+  if (group === "observatory") return track.duration >= 90 ? ["cosmic-stillness", "cosmic-drift"] : ["cosmic-drift"];
+  if (group === "arcana" || group === "equestria") return ["quiet-transition"];
+  return []; // unknown or separately authored material keeps the station theme
+}
+function soundAfterSpeech(track, station) {
+  if (track.excerpt_id) return station.excerpts.get(track.excerpt_id);
+  const theme = station.music;
+  if (!theme || !["intermission", "feature_intermission"].includes(track.kind) || isAside(track) || isSegue(track)) return theme;
+  const available = [...(station.sounds || []), ...(station.solfeggioSounds || [])];
+  if (!available.length) return theme; // retain speech-only and older playlist behavior
+  soundBoundary++;
+  // At least one theme boundary between added sounds, and at least three
+  // intervening eligible boundaries before the same sound can recur.
+  if (previousBoundaryHadCue) { previousBoundaryHadCue = false; return theme; }
+  for (const name of soundChoices(track)) {
+    const id = "station-sound-" + name;
+    const candidate = available.find(t => t.id === id);
+    if (!candidate || soundBoundary - (lastCueBoundary.get(id) ?? -Infinity) < 4) continue;
+    lastCueBoundary.set(id, soundBoundary);
+    previousBoundaryHadCue = true;
+    return candidate;
+  }
+  return theme;
+}
 const originalSite = "https://nudisco-ai.whoismister-e.workers.dev";
 const openingWords = "this is nudisco ai astra, speaking with kokoro.";
 const noticeWords = "there is difficult material attached to this post. you can visit the site to view it.";
@@ -212,6 +381,30 @@ let mixBags = null;
 let asideBag = null;
 let segueBags = new Map();
 let pendingPassage = null;
+// Select occasional matching opening/closing sounds for an entire spoken block.
+// The existing contextual cooldown is consumed once per block, never twice.
+let cueFrame = null;
+function startFramedBreak(track, segue) {
+  const eligible = ["intermission", "feature_intermission"].includes(track.kind) && !isAside(track) && !isSegue(track);
+  let outro = eligible ? soundAfterSpeech(track, program) : null;
+  let intro = outro?.kind === "station_sound" ? program.introSounds?.get(outro.id + "-intro") : null;
+  // Little Constellation alone uses the full chime to open and the short chime to close.
+  // Keep the original closing cue if an older playlist has no short version.
+  if (outro?.id === "station-sound-little-constellation" && intro) [intro, outro] = [outro, intro];
+  const target = segue || track;
+  cueFrame = eligible ? {intro, target, passage: track, outro} : null;
+  if (intro) { show(intro, true); return; }
+  if (segue) pendingPassage = track;
+  show(target, true);
+}
+function continueCueIntro(autoplay) {
+  if (!cueFrame || !cueFrame.intro || current !== cueFrame.intro) return false;
+  const {target, passage} = cueFrame;
+  if (target !== passage) pendingPassage = passage;
+  show(target, autoplay);
+  return true;
+}
+
 
 // Session-local editorial mix. No wall-clock sleep inference or persistent data.
 // Ratios are editorial targets; individual recordings and their lead-ins remain whole.
@@ -399,10 +592,7 @@ function playIntermission(track) {
   // prayers (which introduce themselves), and asides are left alone.
   const group = Object.hasOwn(passageGroups, track.id) ? passageGroups[track.id] : null;
   const segue = group ? segueBags.get(group)?.() : null;
-  if (segue) {
-    pendingPassage = track;
-    show(segue, true);
-  } else show(track, true);
+  startFramedBreak(track, segue);
 }
 let lastAside = 0;
 let nextAsideAt = 1;
@@ -525,7 +715,7 @@ function parseProgram(manifest) {
       index.set(track.post_id, track);
     }
     if (track.kind === "station_sound") {
-      const expected = stationSoundPalette.find(s => s.id === track.id);
+      const expected = [...stationSoundPalette, ...introSoundPalette].find(s => s.id === track.id);
       check(expected && track.title === expected.title && track.duration === expected.duration &&
         track.audio_sha256 === expected.sha && track.audio_url === "audio/" + expected.sha + ".mp3" &&
         track.source_url == null && track.date == null && !Object.hasOwn(track, "excerpt_id"));
@@ -565,6 +755,8 @@ function parseProgram(manifest) {
   const shortIds = groups.get("short_id");
   const music = groups.get("music");
   const sounds = stationSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
+  const introSounds = new Map(groups.get("station_sound").filter(t => introSoundPalette.some(s => s.id === t.id)).map(t => [t.id, t]));
+  check(!introSounds.size || (introSounds.size === introSoundPalette.length && sounds.length === stationSoundPalette.length && music.length === 1));
   const originalSounds = sounds.filter(t => originalSoundPalette.some(s => s.id === t.id));
   const solfeggioSounds = sounds.filter(t => solfeggioSoundPalette.some(s => s.id === t.id));
   // Accept complete older v1 programs too (e.g. an in-flight old playlist). Reject partial groups.
@@ -595,7 +787,7 @@ function parseProgram(manifest) {
     check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
   return {opening:stations[0], posts, breaks, ordinaryBreaks, stories, asides, segues, features:groups.get("feature_intermission"),
-    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, excerpts, cadence};
+    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, introSounds, excerpts, cadence};
 }
 
 function arrange(after = -1, omitCurrent = false) {
@@ -743,6 +935,7 @@ function tick() {
 }
 
 function failed() {
+  if (continueCueIntro(playing)) return;
   if (isSegue(current) && pendingPassage) {
     const passage = pendingPassage;
     show(passage, playing);
@@ -777,12 +970,13 @@ function play() {
 }
 
 function readout(post) {
-  byId("title").textContent = current.kind === "music" ? musicTitle : post ? post.title : (isAside(current) || isSegue(current)) ? "astra" : current.title || segmentNames[current.kind];
+  const cueTitle = current.id === "station-sound-little-constellation-intro" ? "little constellation outro" : current.id === "station-sound-little-constellation" && cueFrame?.intro === current ? "little constellation intro" : current.title;
+  byId("title").textContent = current.kind === "music" ? musicTitle : post ? post.title : (isAside(current) || isSegue(current)) ? "astra" : cueTitle || segmentNames[current.kind];
   if (post) {
     const date = shortDate(post.body.date);
     byId("details").textContent = segmentNames[current.kind] + (date ? " · " + date : "");
   } else {
-    let details = isStory(current) ? "astra · across the mirror" : "astra · speaking with kokoro";
+    let details = isStory(current) ? "astra · through the mirror" : "astra · speaking with kokoro";
     if (current.kind === "music") details = "musical excerpt · 9 seconds";
     if (current.kind === "station_sound") details = "quiet sound · " + current.duration + " seconds";
     if (current.kind === "audio_excerpt") details = "audio excerpt · 9 seconds";
@@ -818,6 +1012,7 @@ function readout(post) {
 function show(track, autoplay) {
   accountPlayback();
   accountedSeconds = 0;
+  if (cueFrame && track !== cueFrame.intro && track !== cueFrame.target && track !== cueFrame.passage) cueFrame = null;
   if (!isSegue(track)) pendingPassage = null;
   ++attempt;
   playing = false;
@@ -859,6 +1054,7 @@ function intermissionAfterReading(duration) {
 
 function finish() {
   if (!playing || !audio.ended) return;
+  if (continueCueIntro(true)) return;
   accountPlayback();
   switch (current.kind) {
     case "station_intro":
@@ -917,21 +1113,8 @@ function finish() {
         }
         break;
       }
-      let clip = current.excerpt_id ? program.excerpts.get(current.excerpt_id) : program.music;
-      // Replace, never stack. Paired audio, asides, segues and features are unchanged.
-      if (current.kind === "intermission" && !current.excerpt_id && clip && program.sounds?.length) {
-        if (program.solfeggioSounds?.length) {
-          const family = stationSoundSchedule[stationSoundBreaks++ % stationSoundSchedule.length];
-          if (family === "original") clip = program.sounds[stationSoundCursor++ % program.sounds.length];
-          if (family === "solfeggio") {
-            const id = solfeggioSoundOrder[solfeggioSoundCursor++ % solfeggioSoundOrder.length];
-            clip = program.solfeggioSounds.find(t => t.id === id) || clip;
-          }
-        } else if (++stationSoundBreaks % 3 === 0) {
-          // Older v1 playlist: preserve its original cadence.
-          clip = program.sounds[stationSoundCursor++ % program.sounds.length];
-        }
-      }
+      const clip = cueFrame?.passage === current ? cueFrame.outro : soundAfterSpeech(current, program);
+      cueFrame = null;
       if (clip) {
         show(clip, true);
         return;
