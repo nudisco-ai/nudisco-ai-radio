@@ -1476,6 +1476,7 @@ const segmentNames = {
   audio_excerpt: "intermission · audio excerpt", short_id: "station identification", music: "intermission · music", station_sound: "intermission · sound"
 };
 let program;
+let remasterSources = new Map();
 let current;
 let currentPost = -1;
 let lastPost = -1;
@@ -2424,6 +2425,18 @@ async function load() {
     arrange();
     buildProgram();
     rememberTracks = new Map(manifest.tracks.map(t=>[t.id,t]));
+    // Only builder-verified equal-duration derivatives of the exact same original speech.
+    if (Array.isArray(manifest.remaster_sources) && manifest.remaster_sources.length <= 10000) {
+      for (const row of manifest.remaster_sources) {
+        if (!Array.isArray(row) || row.length !== 3) continue;
+        const [id, from, to] = row;
+        if (typeof id === 'string' && typeof from === 'string' && /^audio\/[a-f0-9]{64}\.mp3$/.test(from) &&
+            from !== to && rememberTracks.get(id)?.audio_url === to) {
+          if (!remasterSources.has(id)) remasterSources.set(id, new Set());
+          remasterSources.get(id).add(from);
+        }
+      }
+    }
     rememberPostIndexes = new Map(program.posts.map((p,i)=>[p.body.id,i]));
     if (!rememberToken || !rememberRestore(rememberRead()?.mark)) show(program.opening, false);
     byId("remember-toggle").disabled = false;
@@ -2454,6 +2467,7 @@ byId("next").addEventListener("click", () => { if (started && program.posts.leng
 byId("shuffle").addEventListener("change", () => {
   shuffled = byId("shuffle").checked;
   arrange(chosenFirst ?? currentPost, true);
+  rememberSavePreferences({shuffle:shuffled});
   rememberSave(true);
 });
 byId("volume").addEventListener("input", setVolume);
@@ -2469,9 +2483,13 @@ audio.addEventListener("pause", () => {
 audio.addEventListener("error", () => { if (current && audio.error) failed(); });
 audio.addEventListener("timeupdate", tick);
 audio.addEventListener("loadedmetadata", tick);
-// Optional, device-local resume bookmark. No storage writes before consent.
+// One optional, device-local consent record for playback, favorites and shuffle.
+// Keep the v1 storage key and bookmark shape stable across releases. No preference writes before consent.
 const rememberKey = "nudisco.radio.remember.v1";
 const rememberLimit = 160000;
+const legacyFavoriteKey = 'nudisco.radio.app.v1.favorites';
+const legacyShuffleKey = 'nudisco.radio.app.v1.shuffle';
+const rememberFavorites = new Set();
 let rememberToken = null, rememberRestored = false, rememberSeek = null;
 let rememberLastWrite = 0, rememberTracks = new Map(), rememberPostIndexes = new Map();
 function rememberRead() {
@@ -2487,6 +2505,64 @@ function rememberPaint() {
   byId("remember-state").textContent = rememberToken ? " · on" : "";
 }
 function rememberStatus(text) { byId("remember-status").textContent = text; }
+function rememberWrite(record) {
+  let raw = JSON.stringify(record);
+  if (raw.length > rememberLimit && record.mark) {
+    record = {...record, mark:{...record.mark,shuffleRemaining:null,rotation:null}};
+    raw = JSON.stringify(record);
+  }
+  if (raw.length > rememberLimit) throw new Error('local preference record exceeds limit');
+  localStorage.setItem(rememberKey, raw);
+}
+function rememberLegacy(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+}
+function rememberClearLegacy() {
+  // The previous app saved these even without consent. Retire both keys.
+  localStorage.removeItem(legacyFavoriteKey);
+  localStorage.removeItem(legacyShuffleKey);
+}
+function rememberFavoriteIds(value) {
+  return Array.isArray(value) ? [...new Set(value.filter(id=>typeof id==='string' && id.length>0 && id.length<=512))] : [];
+}
+function rememberPreferences(value) {
+  return {...(value?.prefs && typeof value.prefs==='object' && !Array.isArray(value.prefs) ? value.prefs : {}),
+    favorites:rememberFavoriteIds(value?.prefs?.favorites),
+    shuffle:typeof value?.prefs?.shuffle==='boolean' ? value.prefs.shuffle : value?.mark?.shuffled===true};
+}
+function rememberApplyPreferences(value) {
+  const prefs=rememberPreferences(value);
+  let changed=prefs.favorites.length!==rememberFavorites.size || prefs.favorites.some(id=>!rememberFavorites.has(id));
+  if (changed) { rememberFavorites.clear(); for (const id of prefs.favorites) rememberFavorites.add(id); }
+  if (shuffled!==prefs.shuffle || byId('shuffle').checked!==prefs.shuffle) {
+    shuffled=prefs.shuffle; byId('shuffle').checked=shuffled;
+    if (program) arrange(chosenFirst ?? currentPost,true);
+    changed=true;
+  }
+  if (changed) document.dispatchEvent(new Event('radio-preferences-change'));
+}
+function rememberConsentRecord() {
+  if (!rememberToken) return null;
+  const value=rememberRead();
+  if (value?.token===rememberToken) return value;
+  // A different tab removed or replaced consent. Never recreate it here.
+  rememberToken=null; rememberPaint(); return null;
+}
+function rememberSavePreferences(patch) {
+  const value=rememberConsentRecord();
+  if (!value) return false;
+  try {
+    rememberWrite({...value,prefs:{...rememberPreferences(value),...patch}});
+    return true;
+  } catch { rememberStatus('your device could not save the radio preferences.'); return false; }
+}
+function rememberRequestConsent() {
+  if (rememberConsentRecord()) return;
+  rememberStatus('');
+  const dialog=byId('remember-dialog');
+  if (dialog.open) return;
+  if (dialog.showModal) dialog.showModal(); else dialog.setAttribute('open','');
+}
 function rememberOffset() {
   if (rememberSeek?.track === current) return rememberSeek.time;
   return Number.isFinite(audio.currentTime) ? Math.max(0, Math.min(current?.duration || 0, audio.currentTime)) : 0;
@@ -2495,7 +2571,8 @@ function rememberSave(force = false, offset = null) {
   if (!rememberToken || !program || !current || !started) return;
   if (!force && Date.now() - rememberLastWrite < 5000) return;
   // Another window may have disabled or replaced consent. Never recreate it.
-  if (rememberRead()?.token !== rememberToken) { rememberToken = null; rememberPaint(); return; }
+  const record = rememberConsentRecord();
+  if (!record) return;
   const previous = [sessionSeconds, accountedSeconds, postDebt, storyDebt];
   accountPlayback();
   const postId = i => program.posts[i]?.body.id ?? null;
@@ -2519,9 +2596,7 @@ function rememberSave(force = false, offset = null) {
   };
   [sessionSeconds, accountedSeconds, postDebt, storyDebt] = previous;
   try {
-    const raw = JSON.stringify({version:1, token:rememberToken, mark});
-    if (raw.length > rememberLimit) { mark.shuffleRemaining = mark.rotation = null; }
-    localStorage.setItem(rememberKey, JSON.stringify({version:1, token:rememberToken, mark}));
+    rememberWrite({...record, mark});
     rememberLastWrite = Date.now();
   } catch { rememberStatus("your device could not save the playback bookmark."); }
 }
@@ -2542,11 +2617,11 @@ function rememberRestore(mark) {
   }
   currentPost = post; lastPost = idx(mark.lastPost);
   if (postKinds.has(track.kind)) lastPost = post;
-  shuffled = mark.shuffled === true; byId("shuffle").checked = shuffled;
+  shuffled = rememberPreferences(rememberRead()).shuffle; byId("shuffle").checked = shuffled;
   arrange(post, true);
   if (idx(mark.nextPost) >= 0 && track.id === mark.id) nextIndex = idx(mark.nextPost);
   const chosen = track.id === mark.id ? idx(mark.chosen) : -1; chosenFirst = chosen >= 0 ? chosen : null;
-  if (shuffled && Array.isArray(mark.shuffleRemaining) && mark.shuffleRemaining.length <= 2000 && track.id === mark.id) {
+  if (shuffled && mark.shuffled === true && Array.isArray(mark.shuffleRemaining) && mark.shuffleRemaining.length <= 2000 && track.id === mark.id) {
     shuffledOrder = [...new Set(mark.shuffleRemaining.map(idx).filter(i=>i>=0))]; shuffleCursor = 0;
   }
   sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,-120,120);
@@ -2603,7 +2678,7 @@ function rememberRestore(mark) {
   show(track,false); // never autoplay a restored recording
   started = true;
   // When the same ID has been re-recorded, start that new version at zero.
-  const time = track.id === mark.id && track.audio_url === mark.source ? num(mark.time,0,Math.max(0,track.duration-.1)) : 0;
+  const time = track.id === mark.id && (track.audio_url === mark.source || remasterSources.get(track.id)?.has(mark.source)) ? num(mark.time,0,Math.max(0,track.duration-.1)) : 0;
   if (time>0) {
     rememberSeek={track,time};
     try { audio.currentTime=time; } catch {}
@@ -2642,15 +2717,27 @@ function startOver() {
   rememberStatus("");
   if (rememberToken) {
     try {
-      if (rememberRead()?.token === rememberToken) {
-        localStorage.setItem(rememberKey, JSON.stringify({version:1,token:rememberToken,mark:null}));
-      } else { rememberToken = null; rememberPaint(); }
+      const value=rememberConsentRecord();
+      if (value) rememberWrite({...value,mark:null});
     } catch { rememberStatus("your device could not reset the saved bookmark."); }
   }
   show(program.opening, autoplay);
 }
 function rememberInit() {
   const value=rememberRead(); rememberToken=value?.token ?? null; rememberPaint();
+  // Existing opt-in bookmarks retain their position and previously stored
+  // preferences. If no consent exists, discard old independent preferences.
+  try {
+    if (value) {
+      const prefs=rememberPreferences(value);
+      if (!Array.isArray(value.prefs?.favorites)) prefs.favorites=rememberFavoriteIds(rememberLegacy(legacyFavoriteKey,[]));
+      if (typeof value.prefs?.shuffle!=='boolean' && !value.mark) prefs.shuffle=rememberLegacy(legacyShuffleKey,false)===true;
+      rememberApplyPreferences({...value,prefs});
+      if (!value.prefs || typeof value.prefs.shuffle!=='boolean' || !Array.isArray(value.prefs.favorites))
+        rememberWrite({...value,prefs});
+    }
+    rememberClearLegacy();
+  } catch { rememberStatus('your device could not update the saved radio preferences.'); }
   const dialog=byId("remember-dialog");
   const resetDialog=byId("start-over-dialog");
   byId("start-over").addEventListener("click",()=>{
@@ -2669,10 +2756,10 @@ function rememberInit() {
   });
   byId("remember-toggle").addEventListener("click",()=>{
     rememberStatus("");
-    if (rememberToken) {
-      try { localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
-      catch { rememberStatus("your device could not delete the saved bookmark."); }
-    } else if (dialog.showModal) dialog.showModal(); else dialog.setAttribute("open", "");
+    if (rememberConsentRecord()) {
+      try { rememberClearLegacy(); localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
+      catch { rememberStatus("your device could not delete the saved radio preferences."); }
+    } else rememberRequestConsent();
   });
   const close=()=>{if (dialog.close) dialog.close(); else dialog.removeAttribute("open");};
   byId("remember-no").addEventListener("click",close);
@@ -2680,13 +2767,18 @@ function rememberInit() {
     close();
     try {
       const token=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
-      localStorage.setItem(rememberKey,JSON.stringify({version:1,token,mark:null}));
+      rememberClearLegacy();
+      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],shuffle:shuffled}});
       rememberToken=token; rememberPaint(); rememberSave(true);
     } catch { rememberToken=null; rememberPaint(); rememberStatus("local storage is unavailable on this device."); }
   });
   window.addEventListener("storage",event=>{
     if (event.key!==rememberKey && event.key!==null) return;
-    rememberToken=rememberRead()?.token ?? null; rememberPaint();
+    const value=rememberRead();
+    rememberToken=value?.token ?? null; rememberPaint();
+    // Opting out in another tab stops storage immediately. Current-session
+    // favorites/shuffle may still be used; they will not survive a reload.
+    if (value) rememberApplyPreferences(value);
   });
   audio.addEventListener("loadedmetadata",rememberApplySeek);
   audio.addEventListener("timeupdate",()=>{ if (playing && !audio.ended) rememberSave(); });

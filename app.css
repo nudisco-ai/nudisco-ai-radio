@@ -48,3 +48,10 @@ dialog {width:min(92vw,430px);border:1px solid var(--line);border-radius:24px;pa
 html, body.astra-app, body.astra-app * {touch-action:pan-x pan-y;}
 /* Prevent iOS focus zoom on the library search field. */
 #search-library {font-size:16px;}
+
+/* Native disclosure rows: no additional animation, image or storage. */
+.library-collection {border-bottom:1px solid var(--line);margin:0 0 4px;}
+.library-collection > summary {cursor:pointer;min-height:48px;padding:13px 4px;font-size:.94rem;color:var(--signal);overflow-wrap:anywhere;}
+.library-collection > summary::marker {color:var(--accent);}
+.collection-count {float:right;margin-left:8px;color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums;}
+.library-collection > .library-list {padding:0 4px 7px 13px;}

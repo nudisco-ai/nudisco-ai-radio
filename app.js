@@ -2,14 +2,20 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const prefKey = 'nudisco.radio.app.v1.favorites';
-  const shuffleKey = 'nudisco.radio.app.v1.shuffle';
-  const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
-  const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
-  const saved = read(prefKey, []);
-  const favorites = new Set(Array.isArray(saved) ? saved.filter(x => typeof x === 'string') : []);
+  const favorites = rememberFavorites;
   let items = [], lookup = new Map(), initialized = false, filter = 'all', view = 'radio';
   let sleepDeadline = 0, timer = 0, metaKey = '';
+  const opened = new Set();
+  let librarySignature = '';
+  const groupOrder = ['posts','the chronicles of harmony · wisdom','the chronicles of harmony · history','through the mirror','starlight insights','great and powerful words of wisdom','quantum harmony','astra’s observatory','corvid circle','arcana','equestria','cosmic asides','astra’s asides','transitions','station features','other transmissions'];
+  const familyNames = {'chronicles-wisdom':groupOrder[1],'chronicles-history':groupOrder[2],glimmer:'starlight insights',magnificence:'great and powerful words of wisdom',harmony:'quantum harmony',observatory:'astra’s observatory',corvid:'corvid circle',arcana:'arcana',equestria:'equestria',features:'station features',station:'station features'};
+  function collectionFor(track) {
+    const title = (track.title || '').toLowerCase();
+    if (isStory(track) || /^(?:through|across) the mirror[ ·]/.test(title)) return 'through the mirror';
+    if (isAside(track)) return title.includes('cosmic aside') ? 'cosmic asides' : 'astra’s asides';
+    if (isSegue(track)) return 'transitions';
+    return familyNames[hostGroup(track)] || 'other transmissions';
+  }
   const validDuration = () => audio.readyState >= 1 && Number.isFinite(audio.duration) && audio.duration > 0;
   const currentItem = () => {
     if (!current || !program) return null;
@@ -28,8 +34,10 @@
   }
   function toggleFavorite(id) {
     if (!lookup.has(id)) return;
-    if (favorites.has(id)) favorites.delete(id); else favorites.add(id);
-    write(prefKey, [...favorites]);
+    const adding = !favorites.has(id);
+    if (adding) favorites.add(id); else favorites.delete(id);
+    if (rememberConsentRecord()) rememberSavePreferences({favorites:[...favorites]});
+    else if (adding) rememberRequestConsent();
     update();
     if (view !== 'radio') renderLists();
   }
@@ -56,18 +64,38 @@
   function renderLists() {
     if (!initialized) return;
     const query = $('search-library').value.toLocaleLowerCase().trim();
-    const found = items.filter(i => (filter === 'all' || i.type === filter) && (!query || (i.title + ' ' + i.subtitle).toLocaleLowerCase().includes(query)));
+    const found = items.filter(i => (filter === 'all' || i.type === filter) && (!query || (i.title + ' ' + i.subtitle + ' ' + i.collection).toLocaleLowerCase().includes(query)));
     $('library-count').textContent = found.length + (found.length === 1 ? ' recording' : ' recordings');
-    $('library-list').replaceChildren(...found.map(row));
+    // Build only visible/open collections; closed groups do not allocate hundreds of rows.
+    const signature = JSON.stringify([filter,query,[...favorites]]);
+    if (librarySignature !== signature) {
+      librarySignature = signature;
+      const grouped = new Map();
+      for (const item of found) { if (!grouped.has(item.collection)) grouped.set(item.collection,[]); grouped.get(item.collection).push(item); }
+      const fragment = document.createDocumentFragment();
+      for (const name of groupOrder) {
+        const group = grouped.get(name); if (!group?.length) continue;
+        const section = document.createElement('details'); section.className = 'library-collection';
+        const summary = document.createElement('summary'); summary.textContent = name;
+        const count = document.createElement('span'); count.className = 'collection-count'; count.textContent = String(group.length); summary.append(count);
+        const list = document.createElement('ul'); list.className = 'library-list';
+        section.append(summary,list); section.open = Boolean(query) || opened.has(name);
+        let populated = false;
+        const fill = () => { if (!populated) { list.append(...group.map(row)); populated = true; } };
+        if (section.open) fill();
+        section.addEventListener('toggle', () => { if (section.open) fill(); if (!query) { if (section.open) opened.add(name); else opened.delete(name); } });
+        fragment.append(section);
+      }
+      $('library-list').replaceChildren(fragment);
+    }
     const collection = items.filter(i => favorites.has(i.id));
-    $('favorites-list').replaceChildren(...collection.map(row)); $('favorites-empty').hidden = Boolean(collection.length);
+    if (view === 'favorites') $('favorites-list').replaceChildren(...collection.map(row)); $('favorites-empty').hidden = Boolean(collection.length);
   }
   function initLibrary() {
     if (initialized || !program) return;
-    const postItems = program.posts.map((p, index) => ({id:p.body.id, title:p.title, subtitle:'post · ' + (shortDate(p.body.date) || 'undated') + ' · ' + clock(p.intro.duration + p.body.duration),type:'post',index}));
-    const features = [...program.breaks, ...program.features].filter(t => ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? track.title.toLowerCase() : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',track}));
+    const postItems = program.posts.map((p, index) => ({id:p.body.id, title:p.title, subtitle:'post · ' + (shortDate(p.body.date) || 'undated') + ' · ' + clock(p.intro.duration + p.body.duration),type:'post',collection:'posts',index}));
+    const features = [...program.breaks, ...program.features].filter(t => ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? track.title.toLowerCase() : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',collection:collectionFor(track),track}));
     items = [...postItems,...features]; lookup = new Map(items.map(i => [i.id,i])); initialized = true;
-    if (!rememberRestored && read(shuffleKey,false) === true) { $('shuffle').checked = true; $('shuffle').dispatchEvent(new Event('change')); }
     $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));
     renderLists();
   }
@@ -100,6 +128,7 @@
   }
   function update() {
     initLibrary();
+    $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));
     const item=currentItem(); const btn=$('favorite-now');
     btn.disabled=!item; const active=Boolean(item && favorites.has(item.id)); btn.textContent=active?'♥':'♡'; btn.setAttribute('aria-pressed',String(active));
     const seek=$('seek'); const available=validDuration(); seek.disabled=!available; $('back15').disabled=!available;
@@ -113,7 +142,8 @@
   $('favorite-now').addEventListener('click',()=>{const i=currentItem();if(i)toggleFavorite(i.id);});
   $('back15').addEventListener('click',()=>{if(validDuration())audio.currentTime=Math.max(0,audio.currentTime-15);});
   $('seek').addEventListener('input',()=>{if(validDuration())audio.currentTime=Math.min(audio.duration,Number($('seek').value));});
-  $('shuffle-toggle').addEventListener('click',()=>{if(!program)return;const c=$('shuffle');c.checked=!c.checked;c.dispatchEvent(new Event('change'));write(shuffleKey,c.checked);$('shuffle-toggle').setAttribute('aria-pressed',String(c.checked));});
+  $('shuffle-toggle').addEventListener('click',()=>{if(!program)return;const c=$('shuffle');c.checked=!c.checked;c.dispatchEvent(new Event('change'));$('shuffle-toggle').setAttribute('aria-pressed',String(c.checked));});
+  document.addEventListener('radio-preferences-change',()=>{update();if(view!=='radio')renderLists();});
   const openDialog=id=>{const d=$(id);if(d.showModal)d.showModal();else d.setAttribute('open','');};
   const closeDialog=id=>{const d=$(id);if(d.close)d.close();else d.removeAttribute('open');};
   $('sleep-open').addEventListener('click',()=>openDialog('sleep-dialog'));$('install-help').addEventListener('click',()=>openDialog('install-dialog'));
