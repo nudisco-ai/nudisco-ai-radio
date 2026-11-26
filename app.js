@@ -7,13 +7,13 @@
   let sleepDeadline = 0, timer = 0, metaKey = '';
   const opened = new Set();
   let librarySignature = '';
-  const groupOrder = ['posts','the chronicles of harmony · wisdom','the chronicles of harmony · history','through the mirror','starlight insights','great and powerful words of wisdom','quantum harmony','astra’s observatory','corvid circle','arcana','equestria','cosmic asides','astra’s asides','transitions','station features','art of the dress','other transmissions'];
-  const familyNames = {'chronicles-wisdom':groupOrder[1],'chronicles-history':groupOrder[2],glimmer:'starlight insights',magnificence:'great and powerful words of wisdom',harmony:'quantum harmony',observatory:'astra’s observatory',corvid:'corvid circle',arcana:'arcana',equestria:'equestria',features:'station features',station:'station features'};
+  const groupOrder = ['posts','the chronicles of harmony · wisdom','the chronicles of harmony · history','through the mirror','starlight insights','great and powerful words of wisdom','quantum harmony','Astra’s observatory','corvid circle','arcana','Equestria','cosmic asides','Astra’s asides','transitions','station features','art of the dress','other transmissions'];
+  const familyNames = {'chronicles-wisdom':groupOrder[1],'chronicles-history':groupOrder[2],glimmer:'starlight insights',magnificence:'great and powerful words of wisdom',harmony:'quantum harmony',observatory:'Astra’s observatory',corvid:'corvid circle',arcana:'arcana',equestria:'Equestria',features:'station features',station:'station features'};
   function collectionFor(track) {
     const title = (track.title || '').toLowerCase();
     if (isDress(track)) return 'art of the dress';
     if (isStory(track) || /^(?:through|across) the mirror[ ·]/.test(title)) return 'through the mirror';
-    if (isAside(track)) return title.includes('cosmic aside') ? 'cosmic asides' : 'astra’s asides';
+    if (isAside(track)) return title.includes('cosmic aside') ? 'cosmic asides' : 'Astra’s asides';
     if (isSegue(track)) return 'transitions';
     return familyNames[hostGroup(track)] || 'other transmissions';
   }
@@ -98,7 +98,7 @@
   function initLibrary() {
     if (initialized || !program) return;
     const postItems = program.posts.map((p, index) => ({id:p.body.id, title:p.title, subtitle:'post · ' + (shortDate(p.body.date) || 'undated') + ' · ' + clock(p.intro.duration + p.body.duration),type:'post',collection:'posts',index}));
-    const features = [...program.breaks, ...program.features].filter(t => !isSendoff(t) && !isSendoffIntro(t) && ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? (isDress(track)?track.title:track.title.toLowerCase()) : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',collection:collectionFor(track),track}));
+    const features = [...program.breaks, ...program.features].filter(t => !isSendoff(t) && !isSendoffIntro(t) && ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? stationDisplayTitle(track) : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',collection:collectionFor(track),track}));
     items = [...postItems,...features]; lookup = new Map(items.map(i => [i.id,i])); initialized = true;
     $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));
     renderLists();
