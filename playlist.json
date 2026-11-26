@@ -13368,8 +13368,8 @@
     },
     {
       "announcement_text": "my silver sigil's getting a signal, friend.",
-      "audio_sha256": "9f3fa9d140f478c3f21968a27081a32ab106e4a83f05e6f0fbaa23c79eda0167",
-      "audio_url": "audio/aff40314480314703113f041218c2b9afd202f662f215e5a2b39ff04e7e48c39.mp3",
+      "audio_sha256": "a005557e0c0e96dd0f05ae6d54415e30d1ab7d547c6f43360747913650d1f72d",
+      "audio_url": "audio/df3a204d5a6d0ba43f3b327d369d6747e89cc225bdae5fd93732b5c3671a2f02.mp3",
       "content_hash": "c4c68a5e5a782e8b217dce97a27a2501f461429b88c95a374de61318290e9c3e",
       "date": null,
       "duration": 7.16,
@@ -13382,8 +13382,8 @@
       "title": "astra · sendoff segue"
     },
     {
-      "audio_sha256": "2331de0cdbe3b66c21f75b5b590987a6e1f6025184d3f520b7f7bb29b8cf7191",
-      "audio_url": "audio/2331de0cdbe3b66c21f75b5b590987a6e1f6025184d3f520b7f7bb29b8cf7191.mp3",
+      "audio_sha256": "6d34482e21e1cf2793ffe5202e44836384a7f6d82fb3b0cca6ffb6d21439193c",
+      "audio_url": "audio/6d34482e21e1cf2793ffe5202e44836384a7f6d82fb3b0cca6ffb6d21439193c.mp3",
       "date": null,
       "duration": 200.0,
       "id": "lofi-nudisco-sendoff",

@@ -1474,7 +1474,7 @@ const isDress = track => track?.kind === "intermission" && typeof track.title ==
 const sendoffId = "lofi-nudisco-sendoff";
 const sendoffIntroId = "lofi-nudisco-sendoff-intro";
 const sendoffTitle = "nudisco ai lofi sendoff";
-const sendoffSha = "2331de0cdbe3b66c21f75b5b590987a6e1f6025184d3f520b7f7bb29b8cf7191";
+const sendoffSha = "6d34482e21e1cf2793ffe5202e44836384a7f6d82fb3b0cca6ffb6d21439193c";
 const sendoffWords = "my silver sigil's getting a signal, friend.";
 const isSendoffIntro = track => track?.id === sendoffIntroId && track.kind === "intermission";
 const isSendoff = track => track?.id === sendoffId && track.kind === "sendoff_music";
