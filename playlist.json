@@ -28,6 +28,42 @@
       "title": "station introduction"
     },
     {
+      "announcement_text": "next, an untitled post from november 26, 2026.",
+      "attachments": [],
+      "audio_sha256": "86126d2c6fa3f366ea567b8fd618e37ac178ef3ba07146da5007191660d1af99",
+      "audio_url": "audio/2e3c0f0f71b016b80c802bf2dd9dd6b5d9b77489d2a7113891738a103ff6df2e.mp3",
+      "content_hash": "c0203933ebc72cf10abd55729a8740b797e92db9a261ce95aa09ebf846317252",
+      "date": "2026-11-26T10:33:57-08:00",
+      "difficult_attachment": false,
+      "duration": 5.9257,
+      "edition": "regular",
+      "has_title": false,
+      "id": "intro:20261126-103357-why-am-i-here-5f2a",
+      "kind": "post_intro",
+      "post_id": "20261126-103357-why-am-i-here-5f2a",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261126-103357-why-am-i-here-5f2a",
+      "speed": 1.5,
+      "title": "untitled post"
+    },
+    {
+      "attachments": [],
+      "audio_sha256": "b6aea1d3d71b7c01843708bf1d640b59e03feb7f71332c2fb39e909bc12b59fc",
+      "audio_url": "audio/baddeb7aafdf6c452973dc91db1b4fafeb95922785d597f52eecf537c21c67a2.mp3",
+      "authored_text": "why am i here",
+      "content_hash": "6553100f44312102586b23e20edacb180ae23bc49be2f6e7821318aed79fc956",
+      "date": "2026-11-26T10:33:57-08:00",
+      "difficult_attachment": false,
+      "duration": 1.9237,
+      "edition": "regular",
+      "has_title": false,
+      "id": "post:20261126-103357-why-am-i-here-5f2a",
+      "kind": "post",
+      "post_id": "20261126-103357-why-am-i-here-5f2a",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261126-103357-why-am-i-here-5f2a",
+      "speed": 1.5,
+      "title": "untitled post"
+    },
+    {
       "announcement_text": "the next post is twilight thursday!! it includes an attachment labeled Twilight Sparkle Mlp Twilight GIF - Twilight sparkle Mlp twilight Mlp fim.",
       "attachments": [
         {
@@ -13329,6 +13365,31 @@
       "source_url": null,
       "speed": 1.5,
       "title": "astra · art of the dress · beauty and individuality"
+    },
+    {
+      "announcement_text": "my silver sigil's getting a signal, friend.",
+      "audio_sha256": "9f3fa9d140f478c3f21968a27081a32ab106e4a83f05e6f0fbaa23c79eda0167",
+      "audio_url": "audio/aff40314480314703113f041218c2b9afd202f662f215e5a2b39ff04e7e48c39.mp3",
+      "content_hash": "c4c68a5e5a782e8b217dce97a27a2501f461429b88c95a374de61318290e9c3e",
+      "date": null,
+      "duration": 7.16,
+      "edition": "station",
+      "has_title": true,
+      "id": "lofi-nudisco-sendoff-intro",
+      "kind": "intermission",
+      "source_url": null,
+      "speed": 1.5,
+      "title": "astra · sendoff segue"
+    },
+    {
+      "audio_sha256": "2331de0cdbe3b66c21f75b5b590987a6e1f6025184d3f520b7f7bb29b8cf7191",
+      "audio_url": "audio/2331de0cdbe3b66c21f75b5b590987a6e1f6025184d3f520b7f7bb29b8cf7191.mp3",
+      "date": null,
+      "duration": 200.0,
+      "id": "lofi-nudisco-sendoff",
+      "kind": "sendoff_music",
+      "source_url": null,
+      "title": "nudisco ai lofi sendoff"
     },
     {
       "announcement_text": "Our quantum harmony research reminded me of Fluttershy and the Breezies. She gives those little travelers a place to rest. You can see why they’d want to stay. You can also see the trouble before she can quite bring herself to say it. They still have a journey to make. The pony who made them feel so welcome has to be the one who asks them to go. I like that the story lets that part be hard for her.\n\nIt reminds me of waiting with a friend for their train. You wish you had another hour together.",

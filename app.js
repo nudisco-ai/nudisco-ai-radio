@@ -19,7 +19,7 @@
   }
   const validDuration = () => audio.readyState >= 1 && Number.isFinite(audio.duration) && audio.duration > 0;
   const currentItem = () => {
-    if (!current || !program) return null;
+    if (!current || !program || isSendoff(current) || isSendoffIntro(current)) return null;
     if (['post_intro','post','attachment_notice'].includes(current.kind)) return lookup.get(program.posts[currentPost]?.body.id) || null;
     return lookup.get(current.id) || null;
   };
@@ -98,7 +98,7 @@
   function initLibrary() {
     if (initialized || !program) return;
     const postItems = program.posts.map((p, index) => ({id:p.body.id, title:p.title, subtitle:'post · ' + (shortDate(p.body.date) || 'undated') + ' · ' + clock(p.intro.duration + p.body.duration),type:'post',collection:'posts',index}));
-    const features = [...program.breaks, ...program.features].filter(t => ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? (isDress(track)?track.title:track.title.toLowerCase()) : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',collection:collectionFor(track),track}));
+    const features = [...program.breaks, ...program.features].filter(t => !isSendoff(t) && !isSendoffIntro(t) && ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? (isDress(track)?track.title:track.title.toLowerCase()) : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',collection:collectionFor(track),track}));
     items = [...postItems,...features]; lookup = new Map(items.map(i => [i.id,i])); initialized = true;
     $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));
     renderLists();

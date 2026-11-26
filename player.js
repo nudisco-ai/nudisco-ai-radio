@@ -1471,12 +1471,19 @@ const isSegue = track => track?.kind === "intermission" && Object.hasOwn(segueGr
 const dressSoundPalette = [{"id": "station-sound-dress-intro", "title": "art of the dress intro", "duration": 3.2, "sha": "68d5f3d7249fbc55cab1f3af7ea76efe9c52c7fe5c27b87ee73d78652102986a"}, {"id": "station-sound-dress-outro", "title": "art of the dress outro", "duration": 3.6, "sha": "2d281fa176be14120e2f3575c2f8351788ba9131296c5ee33e631448f65a93aa"}];
 const legacyDressSoundPalette = [{"id": "station-sound-dress-intro", "title": "art of the dress intro", "duration": 3.2, "sha": "63ea29cd6ab2c8bfd49bb4a7042198ed72acd8e747e58abcf329c45963e3821c"}, {"id": "station-sound-dress-outro", "title": "art of the dress outro", "duration": 3.6, "sha": "145e9e6810b71037ef5c1344fa3965ea4032edfd01f55d678293e742708d778f"}];
 const isDress = track => track?.kind === "intermission" && typeof track.title === "string" && track.title.toLowerCase().startsWith("astra · art of the dress · ");
+const sendoffId = "lofi-nudisco-sendoff";
+const sendoffIntroId = "lofi-nudisco-sendoff-intro";
+const sendoffTitle = "nudisco ai lofi sendoff";
+const sendoffSha = "2331de0cdbe3b66c21f75b5b590987a6e1f6025184d3f520b7f7bb29b8cf7191";
+const sendoffWords = "my silver sigil's getting a signal, friend.";
+const isSendoffIntro = track => track?.id === sendoffIntroId && track.kind === "intermission";
+const isSendoff = track => track?.id === sendoffId && track.kind === "sendoff_music";
 const customBreakId = /^custom-[a-f0-9]{32}$/;
 const customExcerptId = /^custom-[a-f0-9]{32}(?:-audio)?$/;
 const segmentNames = {
   station_intro: "station introduction", post_intro: "post introduction", post: "nudisco ai reading",
   attachment_notice: "attachment notice", intermission: "intermission", feature_intermission: "extended intermission",
-  audio_excerpt: "intermission · audio excerpt", short_id: "station identification", music: "intermission · music", station_sound: "intermission · sound"
+  audio_excerpt: "intermission · audio excerpt", short_id: "station identification", music: "intermission · music", sendoff_music: "intermission · music", station_sound: "intermission · sound"
 };
 let program;
 let remasterSources = new Map();
@@ -1517,6 +1524,36 @@ let pendingPassage = null;
 let cueFrame = null;
 // Independent infomercial clock: listened audio, not wall time. No catch-up bursts.
 let dressNextAt = 720, dressBag = null, dressFrame = null, dressPinned = false;
+// Independent played-audio clock: first at 24 min, then 42 min from music start.
+let sendoffNextAt = 1440, sendoffFrame = null;
+function maybeSendoff(resume="boundary") {
+  accountPlayback();
+  if (!program.sendoff || !program.sendoffIntro || sendoffFrame || sessionSeconds < sendoffNextAt) return false;
+  // If the listener skips the introduction, do not immediately replay it.
+  sendoffNextAt = sessionSeconds + 2520;
+  sendoffFrame = {resume};
+  show(program.sendoffIntro, true);
+  return true;
+}
+function finishSendoff(autoplay) {
+  if (!sendoffFrame) return false;
+  const {resume} = sendoffFrame;
+  if (isSendoffIntro(current)) {
+    sendoffNextAt = sessionSeconds + 2520;
+    show(program.sendoff, autoplay);
+    return true;
+  }
+  if (isSendoff(current)) {
+    sendoffFrame = null;
+    if (!autoplay) takePost(false);
+    else if (resume === "post") continueAfterPost();
+    else if (sessionMix) continueSession(resume === "notice");
+    else takePost(true);
+    return true;
+  }
+  sendoffFrame = null;
+  return false;
+}
 function setupDress() { dressBag = makeBag(program.dress); }
 function startDress(track, resume="boundary") {
   // Explicit selections also defer the next automatic spot, avoiding back-to-back ads.
@@ -1540,6 +1577,7 @@ function finishDress(autoplay) {
   if (current === speech && outro) { show(outro,autoplay); return true; }
   if (current === speech || current === outro) {
     dressFrame = null;
+    if (autoplay && maybeSendoff(resume)) return true;
     if (!autoplay) takePost(false);
     else if (resume==="post") continueAfterPost();
     else if (sessionMix) continueSession(resume==="notice");
@@ -1738,7 +1776,7 @@ function storyTarget(seconds) {
   return storyTargets[storyTargets.length-1][1];
 }
 function accountStory(delta, start, track) {
-  if (!storyPool.length || !track || isDress(track) || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
+  if (!storyPool.length || !track || isDress(track) || isSendoffIntro(track) || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
   const end = start+delta, from = Math.max(start,600);
   if (end <= from) return;
   // Integrate piecewise-linear targets exactly across the listening thresholds.
@@ -1757,7 +1795,7 @@ function chooseStory() {
   return !storiesStarted || storyDebt >= .12*track.duration ? track : null;
 }
 const postKinds = new Set(["post_intro", "post", "attachment_notice"]);
-const soundKinds = new Set(["music", "station_sound", "audio_excerpt"]);
+const soundKinds = new Set(["music", "station_sound", "audio_excerpt", "sendoff_music"]);
 function sessionTarget(seconds) {
   for (let i = 1; i < sessionTargets.length; i++) {
     const a = sessionTargets[i-1], b = sessionTargets[i];
@@ -1782,7 +1820,7 @@ function accountPlayback() {
   const [posts, host] = sessionTarget(sessionSeconds+delta/2);
   accountStory(delta,sessionSeconds,current);
   sessionSeconds += delta;
-  if (!soundKinds.has(current.kind) && !isDress(current)) {
+  if (!soundKinds.has(current.kind) && !isDress(current) && !isSendoffIntro(current)) {
     // A bounded running error prevents a single long track from monopolizing later choices.
     const desired = posts/(posts+host);
     postDebt = Math.max(-120, Math.min(120, postDebt + delta*((postKinds.has(current.kind) ? 1 : 0)-desired)));
@@ -1870,6 +1908,7 @@ function setupSegues() {
 }
 
 function playIntermission(track) {
+  if (isSendoff(track) || isSendoffIntro(track)) return; // scheduled radio only
   if (isDress(track)) { startDress(track); return; }
   if (isStory(track)) {
     // Explicit library selection can jump to an episode. Automatic play never
@@ -2021,6 +2060,8 @@ function parseProgram(manifest) {
         track.audio_sha256 === expected.sha && track.audio_url === "audio/" + expected.sha + ".mp3" &&
         track.source_url == null && track.date == null && !Object.hasOwn(track, "excerpt_id"));
     }
+    if (track.kind === "sendoff_music" || track.id === sendoffId) check(isSendoff(track) && track.title === sendoffTitle && track.duration === 200 && track.audio_sha256 === sendoffSha && track.audio_url === "audio/" + sendoffSha + ".mp3" && track.source_url == null && track.date == null);
+    if (track.id === sendoffIntroId) check(isSendoffIntro(track) && track.announcement_text === sendoffWords && track.source_url == null && track.date == null);
     if (track.kind === "music") check(track.id === "lofi-nudisco" && (track.title === musicTitle || track.title === "lofi nudisco") && track.duration === 9);
     if (track.id.startsWith("custom-") || track.kind === "audio_excerpt" || Object.hasOwn(track, "excerpt_id")) {
       check(typeof track.title === "string" && track.title.trim() &&
@@ -2042,7 +2083,7 @@ function parseProgram(manifest) {
     }
     if (track.kind === "attachment_notice") check(track.edition === "regular" && validPostLink(track) && track.announcement_text === noticeWords);
     if (track.kind === "post") check(typeof track.authored_text === "string" && track.authored_text.trim());
-    else if (track.kind !== "music" && track.kind !== "audio_excerpt" && track.kind !== "station_sound") check(typeof track.announcement_text === "string" && track.announcement_text.trim());
+    else if (!soundKinds.has(track.kind)) check(typeof track.announcement_text === "string" && track.announcement_text.trim());
   }
   for (const id of requestedExcerpts) check(excerpts.has(id));
   for (const id of excerpts.keys()) check(!id.endsWith("-audio") || requestedExcerpts.has(id));
@@ -2050,7 +2091,10 @@ function parseProgram(manifest) {
   const bodies = groups.get("post");
   const asides = tracks.filter(isAside);
   const segues = tracks.filter(isSegue);
-  const breaks = tracks.filter(t => (t.kind === "intermission" && !isAside(t) && !isSegue(t)) || (t.kind === "audio_excerpt" && !requestedExcerpts.has(t.id)));
+  const sendoff = groups.get("sendoff_music")[0];
+  const sendoffIntro = tracks.find(isSendoffIntro);
+  check(Boolean(sendoff) === Boolean(sendoffIntro) && groups.get("sendoff_music").length <= 1);
+  const breaks = tracks.filter(t => (t.kind === "intermission" && !isAside(t) && !isSegue(t) && !isSendoffIntro(t)) || (t.kind === "audio_excerpt" && !requestedExcerpts.has(t.id)));
   const dress = breaks.filter(isDress);
   const dressCatalogue = manifest.dress_catalogue;
   const dressSounds = new Map(groups.get("station_sound").filter(t=>dressSoundPalette.some(s=>s.id===t.id)).map(t=>[t.id,t]));
@@ -2098,7 +2142,7 @@ function parseProgram(manifest) {
     check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
   return {opening:stations[0], posts, breaks, ordinaryBreaks, stories, asides, segues, features:groups.get("feature_intermission"),
-    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, expansionSounds, introSounds, excerpts, cadence, dress, dressCatalogue, dressSounds};
+    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, expansionSounds, introSounds, excerpts, cadence, dress, dressCatalogue, dressSounds, sendoff, sendoffIntro};
 }
 
 function arrange(after = -1, omitCurrent = false) {
@@ -2230,7 +2274,7 @@ function message(text) {
 
 function paintControls() {
   document.body.dataset.playing = String(playing);
-  byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : isSegue(current) ? "astra · segue" : isStory(current) ? "astra · storytelling" : isDress(current) ? "astra · infomercial" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
+  byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : (isSegue(current) || isSendoffIntro(current)) ? "astra · segue" : isStory(current) ? "astra · storytelling" : isDress(current) ? "astra · infomercial" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
   byId("play-icon").classList.toggle("pause", playing);
   byId("tune-text").textContent = playing ? "pause" : started ? "resume" : "tune in";
   byId("next").disabled = !started || !program.posts.length;
@@ -2247,6 +2291,7 @@ function tick() {
 }
 
 function failed() {
+  if (sendoffFrame) { const wasPlaying=playing; accountPlayback(); if (finishSendoff(wasPlaying)) return; }
   if (dressFrame) { const wasPlaying=playing; accountPlayback(); if (finishDress(wasPlaying)) return; }
   if (continueCueIntro(playing)) return;
   if (isSegue(current) && pendingPassage) {
@@ -2254,7 +2299,7 @@ function failed() {
     show(passage, playing);
     return;
   }
-  if (["music", "station_sound", "audio_excerpt", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
+  if (["music", "station_sound", "audio_excerpt", "sendoff_music", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
     const autoplay = playing;
     takePost(autoplay);
     message("the break was unavailable. continuing with the next post.");
@@ -2349,20 +2394,22 @@ function transcriptDisplayText(value, preserveEmphasis = false) {
 
 function readout(post) {
   const cueTitle = current.id === "station-sound-little-constellation-intro" ? "little constellation outro" : current.id === "station-sound-little-constellation" && cueFrame?.intro === current ? "little constellation intro" : stationDisplayTitle(current);
-  byId("title").textContent = current.kind === "music" ? musicTitle : post ? post.title : (isAside(current) || isSegue(current)) ? "astra" : cueTitle || segmentNames[current.kind];
+  byId("title").textContent = isSendoff(current) ? sendoffTitle : current.kind === "music" ? musicTitle : post ? post.title : (isAside(current) || isSegue(current) || isSendoffIntro(current)) ? "astra" : cueTitle || segmentNames[current.kind];
   if (post) {
     const date = shortDate(post.body.date);
     byId("details").textContent = segmentNames[current.kind] + (date ? " · " + date : "");
   } else {
     let details = isStory(current) ? "astra · through the mirror" : "astra · speaking with kokoro";
+    if (isSendoffIntro(current)) details = "astra · signal interference";
     if (current.kind === "music") details = "musical excerpt · 9 seconds";
+    if (isSendoff(current)) details = "musical intermission · 3:20";
     if (current.kind === "station_sound") details = stationSoundLabel(current) + " · " + current.duration + " seconds";
     if (current.kind === "audio_excerpt") details = "audio excerpt · 9 seconds";
     byId("details").textContent = current.kind !== "station_sound" && current.credit ? details + " · " + current.credit : details;
   }
 
   const source = byId("original");
-  source.hidden = isDress(current) || Boolean(dressFrame) || isStory(current) || (!post && lastPost < 0);
+  source.hidden = isSendoff(current) || isSendoffIntro(current) || isDress(current) || Boolean(dressFrame) || isStory(current) || (!post && lastPost < 0);
   if (source.hidden) source.removeAttribute("href");
   else {
     const linked = post ?? program.posts[lastPost];
@@ -2393,6 +2440,7 @@ function show(track, autoplay) {
   rememberSeek = null;
   accountPlayback();
   accountedSeconds = 0;
+  if (sendoffFrame && !isSendoff(track) && !isSendoffIntro(track)) sendoffFrame = null;
   if (dressFrame && ![dressFrame.intro,dressFrame.speech,dressFrame.outro].includes(track)) dressFrame=null;
   if (cueFrame && track !== cueFrame.intro && track !== cueFrame.target && track !== cueFrame.passage) cueFrame = null;
   if (!isSegue(track)) pendingPassage = null;
@@ -2465,6 +2513,7 @@ function finish() {
   if (!playing || !audio.ended) return;
   if (continueCueIntro(true)) return;
   accountPlayback();
+  if (finishSendoff(true)) return;
   if (finishDress(true)) return;
   if (isStory(current)) completeStory(current);
   switch (current.kind) {
@@ -2484,12 +2533,12 @@ function finish() {
         show(program.posts[currentPost].notice, true);
         return;
       }
-      if (maybeDress("post")) return;
+      if (maybeSendoff("post") || maybeDress("post")) return;
       continueAfterPost();
       return;
     }
     case "attachment_notice":
-      if (maybeDress("notice")) return;
+      if (maybeSendoff("notice") || maybeDress("notice")) return;
       if (sessionMix) { continueSession(true); return; }
       break;
     case "intermission":
@@ -2514,7 +2563,7 @@ function finish() {
       break;
     }
   }
-  if (maybeDress()) return;
+  if (maybeSendoff() || maybeDress()) return;
   if (sessionMix) continueSession();
   else takePost(true);
 }
@@ -2721,7 +2770,7 @@ function rememberClearLegacy() {
   localStorage.removeItem(legacyShuffleKey);
 }
 function rememberFavoriteIds(value) {
-  return Array.isArray(value) ? [...new Set(value.filter(id=>typeof id==='string' && id.length>0 && id.length<=512))] : [];
+  return Array.isArray(value) ? [...new Set(value.filter(id=>typeof id==='string' && id.length>0 && id.length<=512 && id!==sendoffId && id!==sendoffIntroId))] : [];
 }
 function rememberPreferences(value) {
   return {...(value?.prefs && typeof value.prefs==='object' && !Array.isArray(value.prefs) ? value.prefs : {}),
@@ -2794,6 +2843,7 @@ function rememberSave(force = false, offset = null) {
       lastStoryBlock, nextSessionAsideAt,
       lastSessionAsideSeconds:Number.isFinite(lastSessionAsideSeconds)?lastSessionAsideSeconds:null,
       asides:asideBag?.snapshot() ?? null},
+    sendoffNextAt, sendoffFrame:sendoffFrame ? {resume:sendoffFrame.resume} : null,
     dressNextAt, dressBag:dressBag?.snapshot() ?? null,
     dressFrame:dressFrame ? {intro:dressFrame.intro?.id ?? null,speech:dressFrame.speech.id,outro:dressFrame.outro?.id ?? null,resume:dressFrame.resume} : null,
     pending: pendingPassage?.id ?? null,
@@ -2831,6 +2881,12 @@ function rememberRestore(mark) {
     shuffledOrder = [...new Set(mark.shuffleRemaining.map(idx).filter(i=>i>=0))]; shuffleCursor = 0;
   }
   sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,-120,120);
+  sendoffNextAt=Number.isFinite(mark.sendoffNextAt)?num(mark.sendoffNextAt,1440,1e9):1440;
+  if (isSendoff(track) || isSendoffIntro(track)) {
+    const resume=mark.sendoffFrame?.resume;
+    sendoffFrame={resume:["post","notice"].includes(resume)&&post>=0?resume:"boundary"};
+    if (!Number.isFinite(mark.sendoffNextAt)) sendoffNextAt=sessionSeconds+2520;
+  }
   dressNextAt=Number.isFinite(mark.dressNextAt)?num(mark.dressNextAt,720,1e9):720;
   dressBag?.restore(mark.dressBag);
   const df=mark.dressFrame;
@@ -2929,6 +2985,7 @@ function startOver() {
   soundBoundary = 0; previousBoundaryHadCue = false; lastCueBoundary.clear();
   cueFrame = pendingPassage = null;
   dressFrame=null; dressNextAt=720; setupDress();
+  sendoffFrame=null; sendoffNextAt=1440;
   mixBags = asideBag = null; segueBags.clear();
   rememberSeek = null; rememberRestored = false; dialsLastActivity=0;
   setupMixedRotation(); setupSessionMix(); setupAsides(); setupSegues(); arrange();
