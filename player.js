@@ -1468,7 +1468,8 @@ const passageGroups = {
   "feature-biscuit-note": "harmony"
 };
 const isSegue = track => track?.kind === "intermission" && Object.hasOwn(segueGroups, track.id) && !Object.hasOwn(track, "excerpt_id");
-const dressSoundPalette = [{"id": "station-sound-dress-intro", "title": "art of the dress intro", "duration": 3.2, "sha": "63ea29cd6ab2c8bfd49bb4a7042198ed72acd8e747e58abcf329c45963e3821c"}, {"id": "station-sound-dress-outro", "title": "art of the dress outro", "duration": 3.6, "sha": "145e9e6810b71037ef5c1344fa3965ea4032edfd01f55d678293e742708d778f"}];
+const dressSoundPalette = [{"id": "station-sound-dress-intro", "title": "art of the dress intro", "duration": 3.2, "sha": "68d5f3d7249fbc55cab1f3af7ea76efe9c52c7fe5c27b87ee73d78652102986a"}, {"id": "station-sound-dress-outro", "title": "art of the dress outro", "duration": 3.6, "sha": "2d281fa176be14120e2f3575c2f8351788ba9131296c5ee33e631448f65a93aa"}];
+const legacyDressSoundPalette = [{"id": "station-sound-dress-intro", "title": "art of the dress intro", "duration": 3.2, "sha": "63ea29cd6ab2c8bfd49bb4a7042198ed72acd8e747e58abcf329c45963e3821c"}, {"id": "station-sound-dress-outro", "title": "art of the dress outro", "duration": 3.6, "sha": "145e9e6810b71037ef5c1344fa3965ea4032edfd01f55d678293e742708d778f"}];
 const isDress = track => track?.kind === "intermission" && typeof track.title === "string" && track.title.toLowerCase().startsWith("astra · art of the dress · ");
 const customBreakId = /^custom-[a-f0-9]{32}$/;
 const customExcerptId = /^custom-[a-f0-9]{32}(?:-audio)?$/;
@@ -2013,7 +2014,7 @@ function parseProgram(manifest) {
       index.set(track.post_id, track);
     }
     if (track.kind === "station_sound") {
-      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...dressSoundPalette].find(s => s.id === track.id);
+      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...dressSoundPalette, ...legacyDressSoundPalette].find(s => s.id === track.id && s.sha === track.audio_sha256);
       const legacyTitle = track.id === "station-sound-magnificence" ? "magnificence" :
         track.id === "station-sound-magnificence-intro" ? "magnificence intro" : null;
       check(expected && (track.title === expected.title || (legacyTitle !== null && track.title === legacyTitle)) && track.duration === expected.duration &&

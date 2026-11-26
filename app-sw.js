@@ -1,6 +1,6 @@
 /* Online-first app shell, no audio or playlist caching. Scope: app.html only. */
 'use strict';
-const name='nudisco-radio-app-shell-v5';
+const name='nudisco-radio-app-shell-v6';
 const shell=['app.html','app.css','app.js','app.webmanifest','app-icon-180.png','app-icon-192.png','app-icon-512.png','player.js','player.css','receiver.webp'];
 const paths=new Set(shell.map(p=>new URL(p,self.location.href).pathname));
 self.addEventListener('install',e=>e.waitUntil(caches.open(name).then(c=>c.addAll(shell.map(p=>new Request(new URL(p,self.location.href),{cache:'reload'}))))));
