@@ -2739,26 +2739,44 @@ function rememberInit() {
     rememberClearLegacy();
   } catch { rememberStatus('your device could not update the saved radio preferences.'); }
   const dialog=byId("remember-dialog");
+  // Reuse the existing two-button confirmation shell for both destructive actions.
   const resetDialog=byId("start-over-dialog");
-  byId("start-over").addEventListener("click",()=>{
-    if (!program || !current || resetDialog.open) return;
+  let pendingConfirmation=null;
+  function confirmRadioAction(heading,description,action) {
+    if (resetDialog.open) return;
     if (typeof resetDialog.showModal === "function" && typeof resetDialog.close === "function") {
+      byId("start-over-heading").textContent=heading;
+      byId("start-over-description").textContent=description;
+      pendingConfirmation=action;
       resetDialog.showModal();
-    } else if (window.confirm("start over? this will return you to the beginning of the radio and replace your saved playback bookmark, if enabled.")) {
-      startOver();
-    }
+    } else if (window.confirm(heading+" "+description)) action();
+  }
+  byId("start-over").addEventListener("click",()=>{
+    if (!program || !current) return;
+    confirmRadioAction("start over?", "this will return you to the beginning of the radio and replace your saved playback bookmark, if enabled.", startOver);
   });
-  byId("start-over-no").addEventListener("click",()=>{if (resetDialog.open) resetDialog.close();});
+  byId("start-over-no").addEventListener("click",()=>{
+    pendingConfirmation=null;
+    if (resetDialog.open) resetDialog.close();
+  });
+  resetDialog.addEventListener("cancel",()=>{pendingConfirmation=null;});
   byId("start-over-ok").addEventListener("click",()=>{
     if (!resetDialog.open) return;
+    const action=pendingConfirmation;
+    pendingConfirmation=null;
     resetDialog.close();
-    startOver();
+    if (action) action();
   });
   byId("remember-toggle").addEventListener("click",()=>{
     rememberStatus("");
-    if (rememberConsentRecord()) {
-      try { rememberClearLegacy(); localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
-      catch { rememberStatus("your device could not delete the saved radio preferences."); }
+    const record=rememberConsentRecord();
+    if (record) {
+      confirmRadioAction("forget?", "this will remove your saved playback bookmark, favorites and shuffle preference.", ()=>{
+        // An older confirmation must not delete consent newly granted in another tab.
+        if (rememberConsentRecord()?.token!==record.token) return;
+        try { rememberClearLegacy(); localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
+        catch { rememberStatus("your device could not delete the saved radio preferences."); }
+      });
     } else rememberRequestConsent();
   });
   const close=()=>{if (dialog.close) dialog.close(); else dialog.removeAttribute("open");};
