@@ -20,7 +20,7 @@
     </div>
     <nav class="top-nav" aria-label="site navigation">
       <a target="_blank" rel="noopener noreferrer" href="https://nudisco-ai.whoismister-e.workers.dev/#about">about</a>
-      <a href="#radio" aria-current="page">radio</a>
+      <a href="#radio" aria-current="page">radio</a><button id="dials-open" type="button" aria-haspopup="dialog"><svg class="dial-icon" aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 12l4-5M5 12h1M12 5v1M18 12h1M9 18h6"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg><span>controls</span></button>
       <a target="_blank" rel="noopener noreferrer" href="https://nudisco-ai.whoismister-e.workers.dev/rss.xml" type="application/rss+xml">rss</a>
       <a target="_blank" rel="noopener noreferrer" href="https://nudisco-ai.whoismister-e.workers.dev/api" title="public read-only api">api</a>
     </nav>
@@ -57,8 +57,8 @@
               <input id="volume" type="range" min="0" max="100" step="1" value="80">
             </label>
           </div>
-          <div class="remember-row"><button id="remember-toggle" type="button" aria-pressed="false" disabled>remember me<span id="remember-state"></span></button><button id="start-over" type="button" disabled>start over</button></div><p id="remember-status" role="status"></p>
-          <p id="error" role="alert" hidden></p>
+          
+          <p id="error" role="alert" hidden></p><p id="remember-status" role="status"></p>
         </div>
       </div>
     </section>
@@ -93,9 +93,10 @@
       <div id="post-copy" hidden><h3>nudisco ai post</h3><p id="post-text"></p></div>
       <div id="attachment-copy" hidden><h3>public attachments</h3><ul id="attachment-list"></ul></div>
     </details>
+    <details id="dress-catalogue" class="transcript dress-catalogue" hidden><summary>art of the dress · full catalogue</summary><div class="dress-tools"><button id="dress-pin" type="button" class="secondary" aria-pressed="false">pin</button><button id="dress-download" type="button" class="secondary">download .md</button></div><div id="dress-reader" class="dress-reader" aria-label="full fashion catalogue"></div></details>
     <section id="program" class="program" aria-labelledby="program-title" hidden>
       <div class="program-head"><h2 id="program-title">the program</h2><div class="program-options"><p id="program-info"></p>
-        <label id="shuffle-option" hidden><input id="shuffle" type="checkbox"> shuffle posts</label>
+        
       </div></div>
       <ol id="tracks"></ol>
     </section>
@@ -115,7 +116,15 @@
     <a target="_blank" rel="noopener noreferrer" class="footer-robots" href="https://nudisco-ai.neocities.org/">© <span id="year"></span> nudisco ai</a>
     <span>no mouth / no scream / no comment</span>
   </footer>
-<dialog id="remember-dialog" aria-labelledby="remember-heading"><h2 id="remember-heading">remember me</h2><p>this feature uses local storage to remember where you left off, your shuffle preference and any favorites in the radio app. these stay in this browser and are not sent to our servers.</p><p class="remember-note">(if enabled, your saved playback bookmark, favorites and shuffle preference will be deleted upon disabling this feature. clearing browser data may also remove them. what the rest of the internet does is beyond us, friend.)</p><div class="remember-choices"><button id="remember-no" type="button" autofocus>no—nonono NO!</button><button id="remember-ok" type="button">ok</button></div></dialog>
+<dialog id="dials-dialog" aria-labelledby="dials-heading"><div class="dials-head"><h2 id="dials-heading">controls</h2><button id="dials-close" type="button" aria-label="close controls">×</button></div><div class="dials-controls">
+<section class="dials-group"><h3>remember me</h3><p id="dials-memory">preferences and series progress last for this visit.</p><button id="remember-toggle" type="button" aria-pressed="false" disabled>remember me<span id="remember-state"></span></button></section>
+<section class="dials-group"><h3>broadcast schedule</h3><label for="dials-mode">when you return</label><select id="dials-mode"><option value="automatic">automatic restart</option><option value="fresh">always start fresh</option><option value="resume">resume previous schedule</option></select><p id="dials-mode-help">restart a stale schedule without losing your place in the series.</p>
+<details id="dials-timing"><summary>automatic timing</summary><label for="dials-idle">restart after time away</label><select id="dials-idle"><option value="1">1 hour</option><option value="2">2 hours</option><option value="4">4 hours</option><option value="8">8 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select><label for="dials-max">maximum saved listening time</label><select id="dials-max"><option value="4">4 hours</option><option value="8">8 hours</option><option value="12">12 hours</option><option value="24">24 hours</option><option value="48">48 hours</option></select><p>checked when returning or resuming after a long pause, never during continuous playback.</p></details><button id="start-over" type="button" disabled>restart radio schedule</button><p>keeps your series progress, favorites and pins.</p></section>
+<section class="dials-group"><h3>through the mirror</h3><p id="dials-series" role="status">finding the series…</p><button id="dials-series-reset" type="button" disabled>reset series progress</button><p>unfinished episodes stay next in the sequence.</p></section>
+<section class="dials-group"><h3>playback</h3><label id="shuffle-option" hidden><input id="shuffle" type="checkbox"> shuffle posts</label></section>
+<section class="dials-group" id="dials-pins" hidden><h3>pinned catalogue</h3><p>art of the dress</p><button id="dials-unpin" type="button">unpin catalogue</button></section>
+<p id="dials-storage-status" role="status"></p><p id="dials-result" role="status"></p></div></dialog>
+<dialog id="remember-dialog" aria-labelledby="remember-heading"><h2 id="remember-heading">remember me</h2><p>this feature uses local storage to save your broadcast bookmark, schedule settings, series progress, favorites, shuffle preference and pinned dress catalogue. these stay in this browser and are not sent to our servers.</p><p class="remember-note">(if enabled, your saved playback bookmark, schedule settings, series progress, favorites, shuffle preference and pinned dress catalogue will be deleted upon disabling this feature. clearing browser data may also remove them. what the rest of the internet does is beyond us, friend.)</p><div class="remember-choices"><button id="remember-no" type="button" autofocus>no—nonono NO!</button><button id="remember-ok" type="button">ok</button></div></dialog>
 <dialog id="start-over-dialog" aria-labelledby="start-over-heading" aria-describedby="start-over-description"><h2 id="start-over-heading">start over?</h2><p id="start-over-description">this will return you to the beginning of the radio and replace your saved playback bookmark, if enabled.</p><div class="remember-choices"><button id="start-over-no" type="button" autofocus>no</button><button id="start-over-ok" type="button">yes</button></div></dialog>
 </body>
 </html>

@@ -55,3 +55,15 @@ html, body.astra-app, body.astra-app * {touch-action:pan-x pan-y;}
 .library-collection > summary::marker {color:var(--accent);}
 .collection-count {float:right;margin-left:8px;color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums;}
 .library-collection > .library-list {padding:0 4px 7px 13px;}
+
+.app-tabs button{flex:1 1 0;min-width:0;width:auto;max-width:120px}.app-tabs button[hidden]{display:none!important}
+#view-dress .dress-reader{padding-bottom:20px}
+
+#view-dials .dials-controls {padding-bottom:12px;}
+#view-dials .dials-group select,#view-dials .dials-group button {background:var(--surface);border-radius:14px;}
+#view-dials .radio-actions {margin:0;}
+#view-dials .radio-actions button {text-align:center;}
+#view-dials #dials-timing {border-radius:14px;}
+@media(max-width:360px){.app-tabs {padding-left:2px;padding-right:2px;}.app-tabs button {font-size:.65rem;}}
+
+.app-tabs .dial-icon {display:block;width:22px;height:22px;margin:auto;}

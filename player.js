@@ -1468,6 +1468,8 @@ const passageGroups = {
   "feature-biscuit-note": "harmony"
 };
 const isSegue = track => track?.kind === "intermission" && Object.hasOwn(segueGroups, track.id) && !Object.hasOwn(track, "excerpt_id");
+const dressSoundPalette = [{"id": "station-sound-dress-intro", "title": "art of the dress intro", "duration": 3.2, "sha": "63ea29cd6ab2c8bfd49bb4a7042198ed72acd8e747e58abcf329c45963e3821c"}, {"id": "station-sound-dress-outro", "title": "art of the dress outro", "duration": 3.6, "sha": "145e9e6810b71037ef5c1344fa3965ea4032edfd01f55d678293e742708d778f"}];
+const isDress = track => track?.kind === "intermission" && typeof track.title === "string" && track.title.toLowerCase().startsWith("astra · art of the dress · ");
 const customBreakId = /^custom-[a-f0-9]{32}$/;
 const customExcerptId = /^custom-[a-f0-9]{32}(?:-audio)?$/;
 const segmentNames = {
@@ -1512,6 +1514,85 @@ let pendingPassage = null;
 // Select occasional matching opening/closing sounds for an entire spoken block.
 // The existing contextual cooldown is consumed once per block, never twice.
 let cueFrame = null;
+// Independent infomercial clock: listened audio, not wall time. No catch-up bursts.
+let dressNextAt = 720, dressBag = null, dressFrame = null, dressPinned = false;
+function setupDress() { dressBag = makeBag(program.dress); }
+function startDress(track, resume="boundary") {
+  // Explicit selections also defer the next automatic spot, avoiding back-to-back ads.
+  accountPlayback();
+  dressNextAt = sessionSeconds + 1440;
+  const intro = program.dressSounds.get("station-sound-dress-intro") || null;
+  const outro = program.dressSounds.get("station-sound-dress-outro") || null;
+  dressFrame = {intro, speech:track, outro, resume};
+  show(intro || track, true);
+}
+function maybeDress(resume="boundary") {
+  if (!dressBag || dressFrame || sessionSeconds < dressNextAt) return false;
+  const track = dressBag();
+  if (!track) return false;
+  startDress(track,resume); return true;
+}
+function finishDress(autoplay) {
+  if (!dressFrame) return false;
+  const {intro,speech,outro,resume} = dressFrame;
+  if (current === intro) { show(speech,autoplay); return true; }
+  if (current === speech && outro) { show(outro,autoplay); return true; }
+  if (current === speech || current === outro) {
+    dressFrame = null;
+    if (!autoplay) takePost(false);
+    else if (resume==="post") continueAfterPost();
+    else if (sessionMix) continueSession(resume==="notice");
+    else takePost(true);
+    return true;
+  }
+  dressFrame = null; return false;
+}
+function dressAvailable() { return Boolean(program?.dress?.length && program.dressCatalogue && (isDress(current) || Boolean(dressFrame) || dressPinned)); }
+function dressPaint() {
+  const available = dressAvailable();
+  const panel = byId("dress-catalogue");
+  panel.hidden = !available;
+  if (!available) panel.open = false;
+  byId("dials-pins").hidden=!dressPinned;
+  const tab = byId("dress-tab");
+  if (tab) tab.hidden = !available;
+  for (const id of ["dress-pin","dress-tab-pin"]) {
+    const button=byId(id); if (!button) continue;
+    button.textContent=dressPinned?"unpin":"pin";
+    button.setAttribute("aria-pressed",String(dressPinned));
+  }
+  // Allocate the full document only when requested; use text nodes, never raw HTML.
+  document.dispatchEvent(new Event("radio-dress-availability"));
+}
+function dressRender(id="dress-reader") {
+  const reader=byId(id);
+  if (!reader || reader.dataset.loaded || !program?.dressCatalogue) return;
+  const frag=document.createDocumentFragment();
+  for (const block of program.dressCatalogue.split(/\n[ \t]*\n+/)) {
+    const line=block.trim(); if (!line) continue;
+    const m=/^(#{1,6})[ \t]+([^\n]+)$/.exec(line);
+    const el=document.createElement(m ? "h"+Math.min(4,m[1].length+1) : "p");
+    el.textContent=m?m[2]:line; frag.append(el);
+  }
+  reader.append(frag); reader.dataset.loaded="true";
+}
+function dressDownload() {
+  if (!dressAvailable()) return;
+  const url=URL.createObjectURL(new Blob([program.dressCatalogue],{type:"text/markdown;charset=utf-8"}));
+  const link=document.createElement("a"); link.href=url; link.download="art-of-the-dress-full-catalogue.md";
+  document.body.append(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function dressTogglePin() {
+  if (!dressAvailable()) return;
+  dressPinned=!dressPinned; dressPaint();
+  if (rememberConsentRecord()) rememberSavePreferences({dressPinned});
+  else if (dressPinned) rememberRequestConsent();
+}
+function dressInitUI() {
+  for (const id of ["dress-pin","dress-tab-pin"]) byId(id)?.addEventListener("click",dressTogglePin);
+  for (const id of ["dress-download","dress-tab-download"]) byId(id)?.addEventListener("click",dressDownload);
+  byId("dress-catalogue").addEventListener("toggle",()=>{if(byId("dress-catalogue").open) dressRender(byId("dress-inline-reader")?"dress-inline-reader":"dress-reader");});
+}
 function startFramedBreak(track, segue) {
   const eligible = ["intermission", "feature_intermission"].includes(track.kind) && !isAside(track) && !isSegue(track);
   let outro = eligible ? soundAfterSpeech(track, program) : null;
@@ -1612,6 +1693,38 @@ const storyOrder = [
 const storyIds = new Set(storyOrder);
 const isStory = track => track?.kind === "intermission" && storyIds.has(track.id);
 let storyPool = [], storyCursor = 0, storiesStarted = 0, storyDebt = 0;
+// Separate durable story position from the schedule's ephemeral counters.
+let seriesNext = storyOrder[0];
+function validSeriesNext(value) { return value === "complete" || storyIds.has(value); }
+function syncStoryCursor() {
+  const index = seriesNext === "complete" ? storyOrder.length : storyOrder.indexOf(seriesNext);
+  const next = storyPool.findIndex(t=>storyOrder.indexOf(t.id)===index);
+  storyCursor = next < 0 ? storyPool.length : next;
+}
+function completeStory(track) {
+  // Library replays, skips and failed recordings cannot advance an unrelated episode.
+  const record = rememberConsentRecord();
+  if (validSeriesNext(record?.prefs?.seriesNext)) {
+    seriesNext=record.prefs.seriesNext; syncStoryCursor();
+  }
+  if (!isStory(track) || track.id !== seriesNext || !storyPool.includes(track)) return;
+  seriesNext=storyOrder[storyOrder.indexOf(track.id)+1] || "complete";
+  syncStoryCursor(); rememberSavePreferences({seriesNext}); dialsPaint();
+}
+function loadSeriesProgress(record) {
+  if (validSeriesNext(record?.prefs?.seriesNext)) seriesNext=record.prefs.seriesNext;
+  else if (record?.mark && storyPool.length) {
+    // Old builds advanced on start. Rewind the currently unfinished story, if identifiable.
+    const mark=record.mark;
+    const i=Number.isFinite(mark.storyCursor)?Math.max(0,Math.min(storyPool.length,Math.floor(mark.storyCursor))):0;
+    const active=storyPool.findIndex(t=>[mark.id,mark.pending,mark.frame?.passage].includes(t.id));
+    if (active>=0 && active+1===i) seriesNext=storyPool[active].id;
+    else if (i>0) seriesNext=storyOrder[storyOrder.indexOf(storyPool[i-1].id)+1] || "complete";
+  }
+  syncStoryCursor();
+  // Migrate once, before a fresh-start policy can discard the old bookmark.
+  if (record && !validSeriesNext(record.prefs?.seriesNext)) rememberSavePreferences({seriesNext});
+}
 // Target fraction of Astra's spoken airtime, not total station airtime.
 // At ten minutes the story becomes eligible; later targets ramp continuously.
 const storyTargets = [[600,.12],[1200,.20],[2400,.27],[3600,.30]];
@@ -1624,7 +1737,7 @@ function storyTarget(seconds) {
   return storyTargets[storyTargets.length-1][1];
 }
 function accountStory(delta, start, track) {
-  if (!storyPool.length || !track || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
+  if (!storyPool.length || !track || isDress(track) || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
   const end = start+delta, from = Math.max(start,600);
   if (end <= from) return;
   // Integrate piecewise-linear targets exactly across the listening thresholds.
@@ -1668,7 +1781,7 @@ function accountPlayback() {
   const [posts, host] = sessionTarget(sessionSeconds+delta/2);
   accountStory(delta,sessionSeconds,current);
   sessionSeconds += delta;
-  if (!soundKinds.has(current.kind)) {
+  if (!soundKinds.has(current.kind) && !isDress(current)) {
     // A bounded running error prevents a single long track from monopolizing later choices.
     const desired = posts/(posts+host);
     postDebt = Math.max(-120, Math.min(120, postDebt + delta*((postKinds.has(current.kind) ? 1 : 0)-desired)));
@@ -1676,6 +1789,7 @@ function accountPlayback() {
 }
 function setupSessionMix() {
   storyPool = storyOrder.map(id=>program.stories.find(t=>t.id===id)).filter(Boolean);
+  syncStoryCursor();
   hostPool = [...program.ordinaryBreaks, ...program.features];
   hostGroups = new Map(); hostCycle = []; lastHostGroup = null;
   for (const track of hostPool) {
@@ -1755,11 +1869,12 @@ function setupSegues() {
 }
 
 function playIntermission(track) {
+  if (isDress(track)) { startDress(track); return; }
   if (isStory(track)) {
     // Explicit library selection can jump to an episode. Automatic play never
     // shuffles the story or loops it after the final episode in this session.
     const i = storyPool.findIndex(t=>t.id===track.id);
-    if (i >= 0) { storyCursor = i+1; storiesStarted++; }
+    if (i >= 0) storiesStarted++;
     lastHostId=track.id; lastStoryBlock=hostBlocks+1;
   }
   if (sessionMix) { hostBlocks++; hostStreak++; postStreak = 0; }
@@ -1898,7 +2013,7 @@ function parseProgram(manifest) {
       index.set(track.post_id, track);
     }
     if (track.kind === "station_sound") {
-      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette].find(s => s.id === track.id);
+      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...dressSoundPalette].find(s => s.id === track.id);
       const legacyTitle = track.id === "station-sound-magnificence" ? "magnificence" :
         track.id === "station-sound-magnificence-intro" ? "magnificence intro" : null;
       check(expected && (track.title === expected.title || (legacyTitle !== null && track.title === legacyTitle)) && track.duration === expected.duration &&
@@ -1935,8 +2050,14 @@ function parseProgram(manifest) {
   const asides = tracks.filter(isAside);
   const segues = tracks.filter(isSegue);
   const breaks = tracks.filter(t => (t.kind === "intermission" && !isAside(t) && !isSegue(t)) || (t.kind === "audio_excerpt" && !requestedExcerpts.has(t.id)));
+  const dress = breaks.filter(isDress);
+  const dressCatalogue = manifest.dress_catalogue;
+  const dressSounds = new Map(groups.get("station_sound").filter(t=>dressSoundPalette.some(s=>s.id===t.id)).map(t=>[t.id,t]));
+  // Old playlists (no fashion tracks) remain valid. A new one must include its actual attachment.
+  check(!dress.length || (typeof dressCatalogue === "string" && dressCatalogue.length <= 512000 && dressCatalogue.startsWith("# art of the dress — full catalogue")));
+  check(!dressSounds.size || (dress.length && dressSounds.size === dressSoundPalette.length && groups.get("music").length === 1));
   const stories = breaks.filter(isStory);
-  const ordinaryBreaks = breaks.filter(t=>!isStory(t));
+  const ordinaryBreaks = breaks.filter(t=>!isStory(t)&&!isDress(t));
   const shortIds = groups.get("short_id");
   const music = groups.get("music");
   const sounds = stationSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
@@ -1976,7 +2097,7 @@ function parseProgram(manifest) {
     check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
   return {opening:stations[0], posts, breaks, ordinaryBreaks, stories, asides, segues, features:groups.get("feature_intermission"),
-    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, expansionSounds, introSounds, excerpts, cadence};
+    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, expansionSounds, introSounds, excerpts, cadence, dress, dressCatalogue, dressSounds};
 }
 
 function arrange(after = -1, omitCurrent = false) {
@@ -2108,7 +2229,7 @@ function message(text) {
 
 function paintControls() {
   document.body.dataset.playing = String(playing);
-  byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : isSegue(current) ? "astra · segue" : isStory(current) ? "astra · storytelling" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
+  byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : isSegue(current) ? "astra · segue" : isStory(current) ? "astra · storytelling" : isDress(current) ? "astra · infomercial" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
   byId("play-icon").classList.toggle("pause", playing);
   byId("tune-text").textContent = playing ? "pause" : started ? "resume" : "tune in";
   byId("next").disabled = !started || !program.posts.length;
@@ -2125,6 +2246,7 @@ function tick() {
 }
 
 function failed() {
+  if (dressFrame) { const wasPlaying=playing; accountPlayback(); if (finishDress(wasPlaying)) return; }
   if (continueCueIntro(playing)) return;
   if (isSegue(current) && pendingPassage) {
     const passage = pendingPassage;
@@ -2151,6 +2273,7 @@ function play(bookmarkOffset = null) {
   }
   const pending = audio.play();
   started = playing = true;
+  dialsLastActivity=Date.now();
   paintControls();
   rememberSave(true, bookmarkOffset);
   if (pending) pending.catch(err => {
@@ -2189,6 +2312,7 @@ function stationSoundLabel(track) {
 // Lowercase station-program titles at display time, never authored post text,
 // transcripts, or the titles of separately credited audio excerpts.
 function stationDisplayTitle(track) {
+  if (isDress(track)) return track.title;
   if (track.kind === "station_sound" && track.id === "station-sound-magnificence") return "great and powerful";
   if (track.kind === "station_sound" && track.id === "station-sound-magnificence-intro") return "great and powerful intro";
   if (typeof track.title !== "string") return track.title;
@@ -2237,7 +2361,7 @@ function readout(post) {
   }
 
   const source = byId("original");
-  source.hidden = isStory(current) || (!post && lastPost < 0);
+  source.hidden = isDress(current) || Boolean(dressFrame) || isStory(current) || (!post && lastPost < 0);
   if (source.hidden) source.removeAttribute("href");
   else {
     const linked = post ?? program.posts[lastPost];
@@ -2246,7 +2370,7 @@ function readout(post) {
   }
   const isNotice = current.kind === "attachment_notice";
   const announcement = post && !isNotice ? post.intro.announcement_text : current.announcement_text;
-  byId("host-text").textContent = transcriptDisplayText(announcement, !post && current.kind === "intermission" && transcriptTrixieEntries.has(current.id));
+  byId("host-text").textContent = isDress(current) ? announcement : transcriptDisplayText(announcement, !post && current.kind === "intermission" && transcriptTrixieEntries.has(current.id));
   byId("post-text").textContent = post ? post.body.authored_text : "";
   byId("host-copy").hidden = !byId("host-text").textContent;
   byId("post-copy").hidden = !post;
@@ -2261,12 +2385,14 @@ function readout(post) {
   }
   byId("transcript").hidden = !post && !current.announcement_text;
   markCurrent(post ? currentPost : -1);
+  dressPaint();
 }
 
 function show(track, autoplay) {
   rememberSeek = null;
   accountPlayback();
   accountedSeconds = 0;
+  if (dressFrame && ![dressFrame.intro,dressFrame.speech,dressFrame.outro].includes(track)) dressFrame=null;
   if (cueFrame && track !== cueFrame.intro && track !== cueFrame.target && track !== cueFrame.passage) cueFrame = null;
   if (!isSegue(track)) pendingPassage = null;
   ++attempt;
@@ -2308,10 +2434,38 @@ function intermissionAfterReading(duration) {
   return null;
 }
 
+function continueAfterPost() {
+  if (sessionMix) { continueSession(true); return; }
+  const {break_every, short_id_every} = program.cadence;
+  const intermission = intermissionAfterReading(program.posts[currentPost].body.duration);
+  if (intermission) {
+    lastBreak = lastAnnouncement = completions;
+    playIntermission(intermission);
+    return;
+  }
+  // Reserve room either side of an ID so breaks never crowd together.
+  const nearBreak = break_every && program.ordinaryBreaks.length && completions - lastBreak + 1 >=
+    (mixBags ? Math.min(2, break_every) : break_every);
+  if (program.shortId && short_id_every && completions % short_id_every === 0 &&
+      completions - lastAnnouncement >= 2 && !nearBreak) {
+    lastAnnouncement = completions;
+    show(program.shortId, true);
+    return;
+  }
+  const aside = asideAfterReading();
+  if (aside) {
+    show(aside, true);
+    return;
+  }
+  takePost(true);
+}
+
 function finish() {
   if (!playing || !audio.ended) return;
   if (continueCueIntro(true)) return;
   accountPlayback();
+  if (finishDress(true)) return;
+  if (isStory(current)) completeStory(current);
   switch (current.kind) {
     case "station_intro":
       if (program.posts.length) takePost(true);
@@ -2329,31 +2483,12 @@ function finish() {
         show(program.posts[currentPost].notice, true);
         return;
       }
-      if (sessionMix) { continueSession(true); return; }
-      const {break_every, short_id_every} = program.cadence;
-      const intermission = intermissionAfterReading(current.duration);
-      if (intermission) {
-        lastBreak = lastAnnouncement = completions;
-        playIntermission(intermission);
-        return;
-      }
-      // Reserve room either side of an ID so breaks never crowd together.
-      const nearBreak = break_every && program.ordinaryBreaks.length && completions - lastBreak + 1 >=
-        (mixBags ? Math.min(2, break_every) : break_every);
-      if (program.shortId && short_id_every && completions % short_id_every === 0 &&
-          completions - lastAnnouncement >= 2 && !nearBreak) {
-        lastAnnouncement = completions;
-        show(program.shortId, true);
-        return;
-      }
-      const aside = asideAfterReading();
-      if (aside) {
-        show(aside, true);
-        return;
-      }
-      break;
+      if (maybeDress("post")) return;
+      continueAfterPost();
+      return;
     }
     case "attachment_notice":
+      if (maybeDress("notice")) return;
       if (sessionMix) { continueSession(true); return; }
       break;
     case "intermission":
@@ -2378,6 +2513,7 @@ function finish() {
       break;
     }
   }
+  if (maybeDress()) return;
   if (sessionMix) continueSession();
   else takePost(true);
 }
@@ -2418,6 +2554,7 @@ async function load() {
       byId("volume").disabled = true;
       return;
     }
+    setupDress();
     setupMixedRotation();
     setupSessionMix();
     setupAsides();
@@ -2438,9 +2575,16 @@ async function load() {
       }
     }
     rememberPostIndexes = new Map(program.posts.map((p,i)=>[p.body.id,i]));
-    if (!rememberToken || !rememberRestore(rememberRead()?.mark)) show(program.opening, false);
+    const record=rememberConsentRecord();
+    loadSeriesProgress(record);
+    if (!record || dialsShouldRestart(record.mark) || !rememberRestore(record.mark)) {
+      if (record?.mark) dialsClearBookmark();
+      show(program.opening, false);
+    }
+    dialsPaint();
     byId("remember-toggle").disabled = false;
     byId("start-over").disabled = false;
+    byId("dials-series-reset").disabled = !storyPool.length;
     byId("tune").disabled = false;
     setVolume();
   } catch {
@@ -2453,12 +2597,15 @@ async function load() {
 
 byId("tune").addEventListener("click", () => {
   if (!playing) {
+    // A suspended but still-open app may be stale too. Never reset an active stream.
+    if (started && dialsMode === "automatic" && dialsLastActivity > 0 && Date.now()-dialsLastActivity >= dialsIdle*3600000) startOver();
     if (audio.error) { accountPlayback(); accountedSeconds = 0; audio.load(); }
     play();
   } else {
     ++attempt;
     audio.pause();
     playing = false;
+    dialsLastActivity=Date.now();
     paintControls();
     rememberSave(true);
   }
@@ -2476,6 +2623,7 @@ audio.addEventListener("pause", () => {
   if (playing && audio.paused && !audio.ended) {
     ++attempt;
     playing = false;
+    dialsLastActivity=Date.now();
     paintControls();
     rememberSave(true);
   }
@@ -2486,6 +2634,54 @@ audio.addEventListener("loadedmetadata", tick);
 // One optional, device-local consent record for playback, favorites and shuffle.
 // Keep the v1 storage key and bookmark shape stable across releases. No preference writes before consent.
 const rememberKey = "nudisco.radio.remember.v1";
+let dialsMode="automatic", dialsIdle=4, dialsMax=12, dialsLastActivity=0;
+const dialsModes=["automatic","fresh","resume"], dialsIdleOptions=[1,2,4,8,12,24], dialsMaxOptions=[4,8,12,24,48];
+function dialsPrefs(prefs) {
+  return {scheduleMode:dialsModes.includes(prefs?.scheduleMode)?prefs.scheduleMode:"automatic",
+    idleHours:dialsIdleOptions.includes(prefs?.idleHours)?prefs.idleHours:4,
+    maxHours:dialsMaxOptions.includes(prefs?.maxHours)?prefs.maxHours:12};
+}
+function dialsShouldRestart(mark, now=Date.now()) {
+  if (!mark) return false;
+  if (dialsMode==="fresh") return true;
+  if (dialsMode!=="automatic") return false;
+  const idle=Number.isFinite(mark.savedAt) && mark.savedAt>0 && mark.savedAt<=now && now-mark.savedAt>=dialsIdle*3600000;
+  const aged=Number.isFinite(mark.sessionSeconds) && mark.sessionSeconds>=dialsMax*3600;
+  return idle || aged;
+}
+function dialsClearBookmark() {
+  const record=rememberConsentRecord();
+  if (record) try { rememberWrite({...record,mark:null}); }
+  catch { rememberStatus("your device could not reset the saved bookmark."); }
+}
+function dialsPaint() {
+  byId("dials-memory").textContent=rememberToken?"saved on this device. turn off to forget saved data.":"preferences and series progress last for this visit.";
+  byId("dials-mode").value=dialsMode; byId("dials-idle").value=String(dialsIdle); byId("dials-max").value=String(dialsMax);
+  byId("dials-timing").hidden=dialsMode!=="automatic";
+  byId("dials-mode-help").textContent={automatic:"restart a stale schedule without losing series progress.",fresh:"start at the station opening each time you reopen the radio.",resume:"continue from your saved broadcast position."}[dialsMode];
+  const series=byId("dials-series");
+  const completed=seriesNext==="complete"?storyOrder.length:Math.max(0,storyOrder.indexOf(seriesNext));
+  series.textContent=!program?"finding the series…":seriesNext==="complete"?"series complete · "+storyOrder.length+" of "+storyOrder.length:!storyPool[storyCursor]?"next episode is unavailable in this release":`${completed} of ${storyOrder.length} episodes completed · next: ${storyPool[storyCursor].title.replace(/^astra\s*·\s*/i,"")}`;
+  byId("dials-pins").hidden=!dressPinned;
+}
+function dialsSet() {
+  const prefs=dialsPrefs({scheduleMode:byId("dials-mode").value,idleHours:Number(byId("dials-idle").value),maxHours:Number(byId("dials-max").value)});
+  dialsMode=prefs.scheduleMode; dialsIdle=prefs.idleHours; dialsMax=prefs.maxHours;
+  rememberSavePreferences(prefs); dialsPaint();
+}
+function dialsInit() {
+  for (const id of ["dials-mode","dials-idle","dials-max"]) byId(id).addEventListener("change",dialsSet);
+  const panel=byId("dials-dialog");
+  if (panel) {
+    byId("dials-open").addEventListener("click",()=>{dialsPaint(); if(panel.showModal)panel.showModal();else panel.setAttribute("open","");});
+    byId("dials-close").addEventListener("click",()=>{if(panel.close)panel.close();else panel.removeAttribute("open");});
+  }
+  byId("dials-unpin").addEventListener("click",()=>{
+    if (!dressPinned) return;
+    dressPinned=false; rememberSavePreferences({dressPinned:false}); dressPaint();
+  });
+  dialsPaint();
+}
 const rememberLimit = 160000;
 const legacyFavoriteKey = 'nudisco.radio.app.v1.favorites';
 const legacyShuffleKey = 'nudisco.radio.app.v1.shuffle';
@@ -2502,9 +2698,10 @@ function rememberRead() {
 }
 function rememberPaint() {
   byId("remember-toggle").setAttribute("aria-pressed", String(!!rememberToken));
-  byId("remember-state").textContent = rememberToken ? " · on" : "";
+  byId("remember-state").textContent = rememberToken ? " · on" : " · off";
+  dialsPaint();
 }
-function rememberStatus(text) { byId("remember-status").textContent = text; }
+function rememberStatus(text) { byId("remember-status").textContent = text; const other=byId("dials-storage-status"); if(other)other.textContent=text; }
 function rememberWrite(record) {
   let raw = JSON.stringify(record);
   if (raw.length > rememberLimit && record.mark) {
@@ -2527,11 +2724,15 @@ function rememberFavoriteIds(value) {
 }
 function rememberPreferences(value) {
   return {...(value?.prefs && typeof value.prefs==='object' && !Array.isArray(value.prefs) ? value.prefs : {}),
+    ...dialsPrefs(value?.prefs),
     favorites:rememberFavoriteIds(value?.prefs?.favorites),
+    dressPinned:value?.prefs?.dressPinned===true,
     shuffle:typeof value?.prefs?.shuffle==='boolean' ? value.prefs.shuffle : value?.mark?.shuffled===true};
 }
 function rememberApplyPreferences(value) {
   const prefs=rememberPreferences(value);
+  dialsMode=prefs.scheduleMode; dialsIdle=prefs.idleHours; dialsMax=prefs.maxHours;
+  if (validSeriesNext(prefs.seriesNext)) { seriesNext=prefs.seriesNext; syncStoryCursor(); }
   let changed=prefs.favorites.length!==rememberFavorites.size || prefs.favorites.some(id=>!rememberFavorites.has(id));
   if (changed) { rememberFavorites.clear(); for (const id of prefs.favorites) rememberFavorites.add(id); }
   if (shuffled!==prefs.shuffle || byId('shuffle').checked!==prefs.shuffle) {
@@ -2539,6 +2740,8 @@ function rememberApplyPreferences(value) {
     if (program) arrange(chosenFirst ?? currentPost,true);
     changed=true;
   }
+  if (dressPinned!==prefs.dressPinned) { dressPinned=prefs.dressPinned; dressPaint(); changed=true; }
+  dialsPaint();
   if (changed) document.dispatchEvent(new Event('radio-preferences-change'));
 }
 function rememberConsentRecord() {
@@ -2577,7 +2780,7 @@ function rememberSave(force = false, offset = null) {
   accountPlayback();
   const postId = i => program.posts[i]?.body.id ?? null;
   const mark = {
-    id: current.id, source: current.audio_url,
+    id: current.id, source: current.audio_url, savedAt:dialsLastActivity || Date.now(),
     time: Math.floor((offset ?? rememberOffset()) * 10) / 10,
     currentPost: postId(currentPost), lastPost: postId(lastPost), nextPost: postId(nextIndex),
     chosen: postId(chosenFirst), shuffled,
@@ -2590,6 +2793,8 @@ function rememberSave(force = false, offset = null) {
       lastStoryBlock, nextSessionAsideAt,
       lastSessionAsideSeconds:Number.isFinite(lastSessionAsideSeconds)?lastSessionAsideSeconds:null,
       asides:asideBag?.snapshot() ?? null},
+    dressNextAt, dressBag:dressBag?.snapshot() ?? null,
+    dressFrame:dressFrame ? {intro:dressFrame.intro?.id ?? null,speech:dressFrame.speech.id,outro:dressFrame.outro?.id ?? null,resume:dressFrame.resume} : null,
     pending: pendingPassage?.id ?? null,
     frame: cueFrame ? {intro: cueFrame.intro?.id ?? null, target: cueFrame.target.id, passage: cueFrame.passage.id, outro: cueFrame.outro?.id ?? null} : null,
     soundBoundary, previousBoundaryHadCue, lastCueBoundary: [...lastCueBoundary]
@@ -2625,13 +2830,22 @@ function rememberRestore(mark) {
     shuffledOrder = [...new Set(mark.shuffleRemaining.map(idx).filter(i=>i>=0))]; shuffleCursor = 0;
   }
   sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,-120,120);
+  dressNextAt=Number.isFinite(mark.dressNextAt)?num(mark.dressNextAt,720,1e9):720;
+  dressBag?.restore(mark.dressBag);
+  const df=mark.dressFrame;
+  if (df && typeof df==="object") {
+    const speech=get(df.speech), intro=program.dressSounds.get("station-sound-dress-intro")||null, outro=program.dressSounds.get("station-sound-dress-outro")||null;
+    if (program.dress.includes(speech)&&[speech,intro,outro].includes(track)) dressFrame={intro,speech,outro,resume:["post","notice"].includes(df.resume)&&post>=0?df.resume:"boundary"};
+  }
+  // Legacy/explicit fashion recording restored without its frame still gets a safe exit.
+  if (isDress(track)&&!dressFrame) { dressFrame={intro:null,speech:track,outro:program.dressSounds.get("station-sound-dress-outro")||null,resume:"boundary"}; dressNextAt=Math.max(dressNextAt,sessionSeconds+1440); }
   postStreak=integer(mark.postStreak); hostStreak=integer(mark.hostStreak); hostBlocks=integer(mark.hostBlocks);
   completions=integer(mark.completions); lastBreak=Math.min(completions,integer(mark.lastBreak)); lastAnnouncement=Math.min(completions,integer(mark.lastAnnouncement));
   breakNumber=integer(mark.breakNumber); featureNumber=integer(mark.featureNumber);
   readingSecondsSinceFeature=num(mark.readingSecondsSinceFeature); readingSecondsSinceBreak=num(mark.readingSecondsSinceBreak);
   mixedSlot=integer(mark.mixedSlot); classicSlot=integer(mark.classicSlot);
   lastAside=Math.min(completions,integer(mark.lastAside)); nextAsideAt=integer(mark.nextAsideAt);
-  storyCursor=Math.min(storyPool.length,integer(mark.storyCursor)); storiesStarted=integer(mark.storiesStarted); storyDebt=num(mark.storyDebt,-1800,1800);
+  syncStoryCursor(); storiesStarted=integer(mark.storiesStarted); storyDebt=num(mark.storyDebt,-1800,1800);
   lastHostId=typeof mark.lastHostId === "string" && get(mark.lastHostId) ? mark.lastHostId : null;
   const rotation=mark.rotation;
   if (rotation && typeof rotation==="object") {
@@ -2675,6 +2889,8 @@ function rememberRestore(mark) {
   const pending=get(mark.pending);
   if (isSegue(track) && pending && ["intermission","feature_intermission"].includes(pending.kind) && !isSegue(pending)) pendingPassage=pending;
   rememberRestored = true;
+  dialsLastActivity=Number.isFinite(mark.savedAt)?Math.min(Date.now(),Math.max(0,mark.savedAt)):Date.now();
+  started=false; // Restoring must not overwrite the saved mark before its seek is applied.
   show(track,false); // never autoplay a restored recording
   started = true;
   // When the same ID has been re-recorded, start that new version at zero.
@@ -2707,12 +2923,13 @@ function startOver() {
   sessionSeconds = accountedSeconds = postDebt = postStreak = hostStreak = hostBlocks = 0;
   hostCycle = []; hostGroups.clear(); lastHostId = lastHostGroup = null;
   lastStoryBlock = -3; nextSessionAsideAt = 2; lastSessionAsideSeconds = -Infinity;
-  storyCursor = storiesStarted = storyDebt = 0;
+  storiesStarted = storyDebt = 0; syncStoryCursor();
   lastAside = 0; nextAsideAt = 1;
   soundBoundary = 0; previousBoundaryHadCue = false; lastCueBoundary.clear();
   cueFrame = pendingPassage = null;
+  dressFrame=null; dressNextAt=720; setupDress();
   mixBags = asideBag = null; segueBags.clear();
-  rememberSeek = null; rememberRestored = false;
+  rememberSeek = null; rememberRestored = false; dialsLastActivity=0;
   setupMixedRotation(); setupSessionMix(); setupAsides(); setupSegues(); arrange();
   rememberStatus("");
   if (rememberToken) {
@@ -2721,7 +2938,7 @@ function startOver() {
       if (value) rememberWrite({...value,mark:null});
     } catch { rememberStatus("your device could not reset the saved bookmark."); }
   }
-  show(program.opening, autoplay);
+  show(program.opening, autoplay); dialsPaint();
 }
 function rememberInit() {
   const value=rememberRead(); rememberToken=value?.token ?? null; rememberPaint();
@@ -2753,7 +2970,14 @@ function rememberInit() {
   }
   byId("start-over").addEventListener("click",()=>{
     if (!program || !current) return;
-    confirmRadioAction("start over?", "this will return you to the beginning of the radio and replace your saved playback bookmark, if enabled.", startOver);
+    confirmRadioAction("restart radio schedule?", "the radio will return to the station opening. your series progress, favorites and pinned catalogues will stay as they are.", ()=>{startOver();byId("dials-result").textContent="fresh broadcast schedule ready.";});
+  });
+  byId("dials-series-reset").addEventListener("click",()=>{
+    if (!program || !storyPool.length) return;
+    confirmRadioAction("reset series progress?", "through the mirror will begin again at its first episode. the current broadcast schedule will not change.", ()=>{
+      seriesNext=storyOrder[0]; syncStoryCursor(); rememberSavePreferences({seriesNext}); rememberSave(true); dialsPaint();
+      byId("dials-result").textContent="series progress reset.";
+    });
   });
   byId("start-over-no").addEventListener("click",()=>{
     pendingConfirmation=null;
@@ -2771,7 +2995,7 @@ function rememberInit() {
     rememberStatus("");
     const record=rememberConsentRecord();
     if (record) {
-      confirmRadioAction("forget?", "this will remove your saved playback bookmark, favorites and shuffle preference.", ()=>{
+      confirmRadioAction("forget?", "this will remove your saved playback bookmark, schedule settings, series progress, favorites, shuffle preference and pinned dress catalogue. current-visit preferences may still be used.", ()=>{
         // An older confirmation must not delete consent newly granted in another tab.
         if (rememberConsentRecord()?.token!==record.token) return;
         try { rememberClearLegacy(); localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
@@ -2786,7 +3010,7 @@ function rememberInit() {
     try {
       const token=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
       rememberClearLegacy();
-      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],shuffle:shuffled}});
+      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],shuffle:shuffled,dressPinned,seriesNext,scheduleMode:dialsMode,idleHours:dialsIdle,maxHours:dialsMax}});
       rememberToken=token; rememberPaint(); rememberSave(true);
     } catch { rememberToken=null; rememberPaint(); rememberStatus("local storage is unavailable on this device."); }
   });
@@ -2799,12 +3023,14 @@ function rememberInit() {
     if (value) rememberApplyPreferences(value);
   });
   audio.addEventListener("loadedmetadata",rememberApplySeek);
-  audio.addEventListener("timeupdate",()=>{ if (playing && !audio.ended) rememberSave(); });
+  audio.addEventListener("timeupdate",()=>{ if (playing && !audio.ended) {dialsLastActivity=Date.now(); rememberSave();} });
   audio.addEventListener("seeked",()=>{if (playing && !audio.ended) rememberSave(true);});
   // Paused tabs must not overwrite newer listening in another window.
   document.addEventListener("visibilitychange",()=>{if (document.hidden && playing && !audio.ended) rememberSave(true);});
   window.addEventListener("pagehide",()=>{if (playing && !audio.ended) rememberSave(true);});
 }
 
+dressInitUI();
+dialsInit();
 rememberInit();
 load();
