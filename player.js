@@ -212,49 +212,49 @@ const auditionSoundPalette = [
     "id": "station-sound-violet-reverie",
     "title": "violet reverie",
     "duration": 5.4,
-    "sha": "348eaf9bfcabbb6074ea46af9cfa934a9fb3c9f6ac1bca42fef1d312fa3481a3"
+    "sha": "24045f0dd787746cd11758e26e3d117425e3052face322a39b962155a1abdaf1"
   },
   {
     "id": "station-sound-crystal-snowfall",
     "title": "crystal snowfall",
     "duration": 5.8,
-    "sha": "8ef5eedff53315413d324d395b45c35fc8d47864295c8e05af653e2292fc451d"
+    "sha": "fc0e8cd5197b1b5fd78fea5596006fd51a67db55c64c9bc99921a6b1a8a8b108"
   },
   {
     "id": "station-sound-velvet-curtain",
     "title": "velvet curtain",
     "duration": 5.4,
-    "sha": "a2b6e41174ea752c5c3eb66c6a4c427627ec27e2df4c80588767405ce1886743"
+    "sha": "2448a916c7477a17ad7892b2b6881d87dbf0dc77580d4302f08d3b2171b0a84a"
   },
   {
     "id": "station-sound-silver-flourish",
     "title": "silver flourish",
     "duration": 5.8,
-    "sha": "1f43ac51825fe37a4628d911a00a54b1770fb2153107a685f4fea8d7c985f8fd"
+    "sha": "675f6156ebd4b5b16973ca98cb1993c6632e59b88d2746ebc5a5cc4e01943a7a"
   },
   {
     "id": "station-sound-moonlit-pages",
     "title": "moonlit pages",
     "duration": 6.2,
-    "sha": "04a605523f140390f5544333d4024c7024c5bb4342459705ae6990f3357b25bc"
+    "sha": "c2c24e35bea34ce000546e02da9978da687c839cd96dc2a1ac996cc14369e046"
   },
   {
     "id": "station-sound-everfree-twilight",
     "title": "everfree twilight",
     "duration": 6.6,
-    "sha": "23ee9aebb8e973eed8db5685a75728e02335d8faa399dd3869919dd2347639f7"
+    "sha": "8f5e6d6ac282af1ab2acf694038e4f6f62f6f4834b965c7ce00a63c05653cf5a"
   },
   {
     "id": "station-sound-echoes-of-antiquity",
     "title": "echoes of antiquity",
     "duration": 6.4,
-    "sha": "53861c0c854bc1d5736375e92eb6bd44e98e8235a59ac09325f9a54f206fc245"
+    "sha": "207dc01c25a618b0047cbc84f94c47c6db9899db26aa936454895d4fb70ba264"
   },
   {
     "id": "station-sound-fourth-dimensional-signal",
     "title": "fourth dimensional signal",
     "duration": 6.4,
-    "sha": "8b5d7723561190befd1fd75d5fd4683d6ead0e7db8cfa1fbe22428a6866de834"
+    "sha": "fb5b9f6a966b67683acadcc44d49a567fc88c0a3b949c9020bfb6823d3905a4b"
   }
 ];
 const auditionIntroPalette = [
@@ -262,7 +262,160 @@ const auditionIntroPalette = [
     "id": "station-sound-violet-reverie-intro",
     "title": "violet reverie intro",
     "duration": 3.35,
+    "sha": "0276d296b5cfe2d724bd6473b6bea4ebe8e449943fa1f95752dd6ae1a7f3e864"
+  },
+  {
+    "id": "station-sound-crystal-snowfall-intro",
+    "title": "crystal snowfall intro",
+    "duration": 3.6,
+    "sha": "61b8b081d726791dcc20b3ef544d3ea1e39afd27a0abe1ec3adfc24af09c15bb"
+  },
+  {
+    "id": "station-sound-velvet-curtain-intro",
+    "title": "velvet curtain intro",
+    "duration": 3.35,
+    "sha": "d8f65247282fee2b9fed6e648a0a6c304f3e376a3dbd6826fc0f3d6438565082"
+  },
+  {
+    "id": "station-sound-silver-flourish-intro",
+    "title": "silver flourish intro",
+    "duration": 3.6,
+    "sha": "628be68946b104f79f6fab1541df9497287ff38f467d8256bd553c8466d4d4a7"
+  },
+  {
+    "id": "station-sound-moonlit-pages-intro",
+    "title": "moonlit pages intro",
+    "duration": 3.84,
+    "sha": "e759dd27e418a4635436e837ae809a72af99e27e09cec7f1d0c14cfbfb69483e"
+  },
+  {
+    "id": "station-sound-everfree-twilight-intro",
+    "title": "everfree twilight intro",
+    "duration": 4.09,
+    "sha": "312a81fbba339305990212f8df58e5b28015c2d0b8b7884d7588d1f8aa4df8ae"
+  },
+  {
+    "id": "station-sound-echoes-of-antiquity-intro",
+    "title": "echoes of antiquity intro",
+    "duration": 3.97,
+    "sha": "1700f63cad76dca5b2439a86fe5c733e941018b67c8ca6caef970d45faab31eb"
+  },
+  {
+    "id": "station-sound-fourth-dimensional-signal-intro",
+    "title": "fourth dimensional signal intro",
+    "duration": 3.97,
+    "sha": "1d71c140d1b99ef19b92a89977e614bfbc776c0ad89018e5268047ce0102ca23"
+  }
+];
+// Exact approved older masters; selection remains by the eight stable cue identities.
+const legacyAuditionPalette = [
+  {
+    "id": "station-sound-violet-reverie-intro",
+    "title": "violet reverie intro",
+    "duration": 3.35,
+    "sha": "6c9d9724b4dc1c0c6c0318cf68a44739539709e9da4a009154986d5b80b986d1"
+  },
+  {
+    "id": "station-sound-violet-reverie",
+    "title": "violet reverie",
+    "duration": 5.4,
+    "sha": "6490ad2d622424dafeb8b5efc7d4712f95484fc043dc905cb86c2f775439dcb9"
+  },
+  {
+    "id": "station-sound-crystal-snowfall-intro",
+    "title": "crystal snowfall intro",
+    "duration": 3.6,
+    "sha": "aa2a847406c15357e0c719b1f60e04633dfed76392b2a556787bb497fcd796e7"
+  },
+  {
+    "id": "station-sound-crystal-snowfall",
+    "title": "crystal snowfall",
+    "duration": 5.8,
+    "sha": "721583e105feb6da21f0a459fbcc050544891fb9b4117dbc55b453438c0483b2"
+  },
+  {
+    "id": "station-sound-velvet-curtain-intro",
+    "title": "velvet curtain intro",
+    "duration": 3.35,
+    "sha": "c41e82ad04caf8057867285b8cd3ab8899b04c755f51b26ab7ed554dcc184c4c"
+  },
+  {
+    "id": "station-sound-velvet-curtain",
+    "title": "velvet curtain",
+    "duration": 5.4,
+    "sha": "b1c0762a50aace69cb6b6440aaa2f9751eff2468a7b24e6519a893606113f75c"
+  },
+  {
+    "id": "station-sound-silver-flourish-intro",
+    "title": "silver flourish intro",
+    "duration": 3.6,
+    "sha": "cf1a1270078ec501de01208089596ed8e59449ca5dce2f82b058ef358ea46e8a"
+  },
+  {
+    "id": "station-sound-silver-flourish",
+    "title": "silver flourish",
+    "duration": 5.8,
+    "sha": "5725e1f4309e7a8d8f3687dafb5515caabd59a12f9427ed4ebe50c77c6c6cb3e"
+  },
+  {
+    "id": "station-sound-moonlit-pages-intro",
+    "title": "moonlit pages intro",
+    "duration": 3.84,
+    "sha": "2283472b6fbcb21c71ec2f055d49314cc0b95d11fe9dcbc31369f941d29e6159"
+  },
+  {
+    "id": "station-sound-moonlit-pages",
+    "title": "moonlit pages",
+    "duration": 6.2,
+    "sha": "68e32e579c9ddb90fb46b87972cadb0d0a23065afc618a2cfb393d695669cf13"
+  },
+  {
+    "id": "station-sound-everfree-twilight-intro",
+    "title": "everfree twilight intro",
+    "duration": 4.09,
+    "sha": "226a8b3ab963f3244fbd4cccf826f8625f6f3f7b8a6ff2415a005eeea07206b0"
+  },
+  {
+    "id": "station-sound-everfree-twilight",
+    "title": "everfree twilight",
+    "duration": 6.6,
+    "sha": "448ea384cf02a5e533de97f485ea9621e603e8268dc37c71e54919e99513021e"
+  },
+  {
+    "id": "station-sound-echoes-of-antiquity-intro",
+    "title": "echoes of antiquity intro",
+    "duration": 3.97,
+    "sha": "0413f947ccf8b491bc49f233bfcddf9671d33331308f54821e89c734e21d3ff2"
+  },
+  {
+    "id": "station-sound-echoes-of-antiquity",
+    "title": "echoes of antiquity",
+    "duration": 6.4,
+    "sha": "3a4d76f150902da2638e2ec99060604a40f5c993c789aec8d46247dfd98fb753"
+  },
+  {
+    "id": "station-sound-fourth-dimensional-signal-intro",
+    "title": "fourth dimensional signal intro",
+    "duration": 3.97,
+    "sha": "ab7baa03485ca7eb3e771b93529db02c23393d554f2277d3fb3911ec4e88d598"
+  },
+  {
+    "id": "station-sound-fourth-dimensional-signal",
+    "title": "fourth dimensional signal",
+    "duration": 6.4,
+    "sha": "4fd55446d0728a3ce3ecf73bb3b02ff434e7ee357d4865dfcc22032724efb7df"
+  },
+  {
+    "id": "station-sound-violet-reverie-intro",
+    "title": "violet reverie intro",
+    "duration": 3.35,
     "sha": "db1360def48f7e345799883cfddfd59f00d1e421049c2484eada000563af83d5"
+  },
+  {
+    "id": "station-sound-violet-reverie",
+    "title": "violet reverie",
+    "duration": 5.4,
+    "sha": "348eaf9bfcabbb6074ea46af9cfa934a9fb3c9f6ac1bca42fef1d312fa3481a3"
   },
   {
     "id": "station-sound-crystal-snowfall-intro",
@@ -271,10 +424,22 @@ const auditionIntroPalette = [
     "sha": "62819aaafab71ebcb5a427f77173aaf4430d9efe161784c0e0669bcac9e08e17"
   },
   {
+    "id": "station-sound-crystal-snowfall",
+    "title": "crystal snowfall",
+    "duration": 5.8,
+    "sha": "8ef5eedff53315413d324d395b45c35fc8d47864295c8e05af653e2292fc451d"
+  },
+  {
     "id": "station-sound-velvet-curtain-intro",
     "title": "velvet curtain intro",
     "duration": 3.35,
     "sha": "89cac83b43b25ff8469bf91939e93c222100bd56dbafaccdde01a38812b089ca"
+  },
+  {
+    "id": "station-sound-velvet-curtain",
+    "title": "velvet curtain",
+    "duration": 5.4,
+    "sha": "a2b6e41174ea752c5c3eb66c6a4c427627ec27e2df4c80588767405ce1886743"
   },
   {
     "id": "station-sound-silver-flourish-intro",
@@ -283,10 +448,22 @@ const auditionIntroPalette = [
     "sha": "2e1ffa84222d717b9fc376d80446f231e7c8e5fd7fe8965335cc369038731879"
   },
   {
+    "id": "station-sound-silver-flourish",
+    "title": "silver flourish",
+    "duration": 5.8,
+    "sha": "1f43ac51825fe37a4628d911a00a54b1770fb2153107a685f4fea8d7c985f8fd"
+  },
+  {
     "id": "station-sound-moonlit-pages-intro",
     "title": "moonlit pages intro",
     "duration": 3.84,
     "sha": "1b2907d5a24a83c1d9ee0fa0e3a05f73127d0a9944992891cf022a8aaec40036"
+  },
+  {
+    "id": "station-sound-moonlit-pages",
+    "title": "moonlit pages",
+    "duration": 6.2,
+    "sha": "04a605523f140390f5544333d4024c7024c5bb4342459705ae6990f3357b25bc"
   },
   {
     "id": "station-sound-everfree-twilight-intro",
@@ -295,16 +472,34 @@ const auditionIntroPalette = [
     "sha": "37eb9b7f525d8a71174c676b32e71f96d0a87279536f5f6fbca7b5c3df1ba104"
   },
   {
+    "id": "station-sound-everfree-twilight",
+    "title": "everfree twilight",
+    "duration": 6.6,
+    "sha": "23ee9aebb8e973eed8db5685a75728e02335d8faa399dd3869919dd2347639f7"
+  },
+  {
     "id": "station-sound-echoes-of-antiquity-intro",
     "title": "echoes of antiquity intro",
     "duration": 3.97,
     "sha": "c2143abd2f671d3f1fc7b8e50aaa854110646e466ac88cc195019dde0a4a12b6"
   },
   {
+    "id": "station-sound-echoes-of-antiquity",
+    "title": "echoes of antiquity",
+    "duration": 6.4,
+    "sha": "53861c0c854bc1d5736375e92eb6bd44e98e8235a59ac09325f9a54f206fc245"
+  },
+  {
     "id": "station-sound-fourth-dimensional-signal-intro",
     "title": "fourth dimensional signal intro",
     "duration": 3.97,
     "sha": "33248e66ea439b83ff21f6cdedb12f43449456af1384cd7ed79a3d8df2fc847a"
+  },
+  {
+    "id": "station-sound-fourth-dimensional-signal",
+    "title": "fourth dimensional signal",
+    "duration": 6.4,
+    "sha": "8b5d7723561190befd1fd75d5fd4683d6ead0e7db8cfa1fbe22428a6866de834"
   }
 ];
 // Editorial sound cues: known passages, not a rotating sound lottery.
@@ -2335,7 +2530,7 @@ function parseProgram(manifest) {
       index.set(track.post_id, track);
     }
     if (track.kind === "station_sound") {
-      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...auditionSoundPalette, ...auditionIntroPalette, ...dressSoundPalette, ...legacyDressSoundPalette].find(s => s.id === track.id && s.sha === track.audio_sha256);
+      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...auditionSoundPalette, ...auditionIntroPalette, ...legacyAuditionPalette, ...dressSoundPalette, ...legacyDressSoundPalette].find(s => s.id === track.id && s.sha === track.audio_sha256);
       const legacyTitle = track.id === "station-sound-magnificence" ? "magnificence" :
         track.id === "station-sound-magnificence-intro" ? "magnificence intro" : null;
       check(expected && (track.title === expected.title || (legacyTitle !== null && track.title === legacyTitle)) && track.duration === expected.duration &&
@@ -2970,7 +3165,8 @@ async function load() {
     byId("dials-series-reset").disabled = !storyPool.length;
     byId("tune").disabled = false;
     setVolume();
-  } catch {
+  } catch (error) {
+    console.error("nudisco radio: initialization failed", error);
     byId("state").textContent = "off the air";
     byId("title").textContent = "the program is unavailable.";
     byId("details").textContent = "reopen the complete station folder or try again later.";
