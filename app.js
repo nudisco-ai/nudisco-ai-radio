@@ -7,11 +7,12 @@
   let sleepDeadline = 0, timer = 0, metaKey = '';
   const opened = new Set();
   let librarySignature = '';
-  const groupOrder = ['posts','the chronicles of harmony · wisdom','the chronicles of harmony · history','through the mirror','starlight insights','great and powerful words of wisdom','quantum harmony','Astra’s observatory','corvid circle','arcana','Equestria','cosmic asides','Astra’s asides','transitions','station features','art of the dress','other transmissions'];
-  const familyNames = {'chronicles-wisdom':groupOrder[1],'chronicles-history':groupOrder[2],glimmer:'starlight insights',magnificence:'great and powerful words of wisdom',harmony:'quantum harmony',observatory:'Astra’s observatory',corvid:'corvid circle',arcana:'arcana',equestria:'Equestria',features:'station features',station:'station features'};
+  const groupOrder = ['posts','the chronicles of harmony · wisdom','the chronicles of harmony · history','through the mirror','starlight insights','great and powerful words of wisdom','quantum harmony','Astra’s observatory','corvid circle','arcana','Equestria','cosmic asides','Astra’s asides','transitions','station features','art of the dress','anywhere, anywhen','science in a pocket dimension','other transmissions'];
+  const familyNames = {'chronicles-wisdom':groupOrder[1],'chronicles-history':groupOrder[2],glimmer:'starlight insights',magnificence:'great and powerful words of wisdom',harmony:'quantum harmony',observatory:'Astra’s observatory',corvid:'corvid circle',arcana:'arcana',equestria:'Equestria',features:'station features',station:'station features','pocket-science':'science in a pocket dimension'};
   function collectionFor(track) {
     const title = (track.title || '').toLowerCase();
     if (isDress(track)) return 'art of the dress';
+    if (typeof isJourney==='function' && isJourney(track)) return 'anywhere, anywhen';
     if (isStory(track) || /^(?:through|across) the mirror[ ·]/.test(title)) return 'through the mirror';
     if (isAside(track)) return title.includes('cosmic aside') ? 'cosmic asides' : 'Astra’s asides';
     if (isSegue(track)) return 'transitions';

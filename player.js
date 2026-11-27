@@ -1831,7 +1831,7 @@ function paintPostMode() {
   const next=byId("next"), label=next.querySelector(".next-label");
   if (label) label.textContent="next";
   next.setAttribute("aria-label","next reading"); next.title="next reading · scheduled breaks keep their own timing";
-  if (program) next.disabled=!started || !(postMode!=="void" && program.posts.length || hostPool.some(isManualReading) || storyPool.length);
+  if (program) next.disabled=!started || !(postMode!=="void" && program.posts.length || hostPool.some(isManualReading) || hasStories());
 }
 function setPostMode(mode) {
   if (!postModes.includes(mode)) mode="off";
@@ -2017,9 +2017,11 @@ let hostGroups = new Map(), hostCycle = [], lastHostGroup = null;
 let pooledReadingBag = null;
 let lastStoryBlock = -3;
 // Preserve the nine editorial classifications, but draw their readings from one bag.
-const pooledReadingGroups = new Set(["chronicles-wisdom", "chronicles-history", "glimmer", "magnificence", "equestria", "harmony", "arcana", "corvid", "observatory"]);
+const pooledReadingGroups = new Set(["chronicles-wisdom", "chronicles-history", "glimmer", "magnificence", "equestria", "harmony", "arcana", "corvid", "observatory", "pocket-science"]);
 // These former family keys now serve as pacing slots, not selection quotas.
 const newReadingGroups = new Set(["chronicles-wisdom", "chronicles-history", "glimmer", "magnificence"]);
+const newObservatoryIds = new Set(["custom-d28eb5cdff8a51a291a3c3c86419817a", "custom-5789981a3c8e5eb58681dbca0231f650", "custom-b660438449b9575a8b2747487f7cf361", "custom-90d62e9f79095baca5cd174f44d282ba", "custom-af5a522aa2b0557bb27f826cc58d1c7f", "custom-ccdfe7894de75f96b91b5a54d89795fa", "custom-e9f5d45b08ec5c6e86675df7c32632de", "custom-d92e643ecdce5c36a138163505139c9a", "custom-967a4bc4e7a0519aaabff81dc6362c58", "custom-fb5676713deb5083a32985583b8d97f7", "custom-fd0bcb40004a5dd58037e7b85b453121", "custom-23ec41f3604556fa99d8439d72e91c1c", "custom-de0d2e5b7b3853d7a90e589497add2ba", "custom-dc07df92abc05f22b21c8a9ce02a32c3", "custom-05f85466024c54318d4ad148e5dc5af1", "custom-1616c8d637ae5276a7193a35234e6035", "custom-76fdecf4ef74542781a5f73458fdf707", "custom-9a78c30a47595332b327682de97aad66", "custom-b3bd1f2f9f235bd6871d1b04f07bb8ff", "custom-7ea282eb1fc35c05982a51d4166fb5b6", "custom-a61a00758f0d5228bd2eba24e969ea0c", "custom-528369e2ffb357b8ad5228b543ea3709", "custom-398520911c7c53be94be3958b80e6037", "custom-6af770f223f657f89d06b0fb90d276fc", "custom-83e375fb21b25446be30d6f608b26a85", "custom-d12f2460f7195b3faf393f0e9c55d194", "custom-6d8d1ef61b035954933cb0c1cb9e9839", "custom-f91ce25bff485364b200e2150dfc598f", "custom-75a312aba26a547e9574dcfabb590f87", "custom-68a6528be9735aa89b02b008cf785e97", "custom-0d95369c9615548288d0274087f05a0c", "custom-d9943e5d18a1577b8241a0cd7c7f1bde", "custom-b860c5bd32255363a23f24ad6b907c9f", "custom-e7826aa131c2513f810e926184b01d89", "custom-0f55e95f58085ea9b4dfa81774a05b04", "custom-bcf20d7e44a151c7bb4a543c3790213f", "custom-69959abb10aa5354807a229b5f1a5156", "custom-0533eb8058195835aaca5ad0d3f86d63", "custom-72b158d8447f54c1805f65233f17507c", "custom-6daded6d1f9a5bf3a6a23b8d3f69ff86", "custom-e05e49cab6d95b90963e5db0382b02e5", "custom-c5fe7d970bb75425ad755b5ec98d49ac"]);
+const pocketScienceIds = new Set(["custom-44218a4841485e079b2972dc33844102", "custom-758e3bc902b95caaabe9659ff96c38a8", "custom-5f0010d87ddb5d87a2a219a7bd712e03", "custom-efb4911eb3575517b28defce883897de", "custom-9f3c9e58f0d25363ad4c73f202868737", "custom-a7999fd184e65f6687605857d57e99ef", "custom-f12a6f74048c528794529e2e9e6bcbfd", "custom-09f3d3eaef0f57e79b64ae8dde6a1ef0", "custom-e89aca643adc5c268819b7a30320a8f5", "custom-f242d41c60fb59cb8031cf0b83b6d52c", "custom-e32bf1697d0050fcb4fd039cbd0c9d48", "custom-101aee0c9afe57d0aaa0a973e2ce5927", "custom-fe63dc63df5d5cb1b5de1f2d56ded268", "custom-d2b3804a049959c28f32b67782d21758", "custom-7fd49613f6ca51d0ac67fa13c644cdca", "custom-43dae62af39f54a4bc4c97076c5b6997", "custom-9f425545877a56c092eafbe9ab1183e5", "custom-d7757a564031533ba80909d5c63f6633", "custom-f7b3598b95d35797b03b9c86649fb5ca", "custom-4977a057dc54578d9191271023e7552c", "custom-62b36b0e6e0c5adf9278f55f560ec707", "custom-c64d5d33e3fe5c46a9106799aa8d71f0", "custom-5badc4d461565771a6c80c5488c124c5", "custom-4466edda12c9515eb6546721d9dfa699", "custom-2c3b1d181bee5f4bb017a095e282d261", "custom-e0f16fc231d357dca5bac6e7eccc8a91", "custom-642487e993a951da8f5a88bbe1155f7c", "custom-aac4201b53aa560882e062fa4b3b6261", "custom-97da4fbfec10534d93ffee93357822d3", "custom-b80794dc09b3534b8e7886d1f5219de4", "custom-520cdb0af04159449daa8f5f64a345fb", "custom-f775a73e42b959b8930302325f193388", "custom-a7c576a5a41f567aa529dfc1ec6aa239", "custom-b569252875a757959746ddc5aa74ffdb", "custom-b6c608c55b3d5779889a75be7c8995cb", "custom-2d553caf8e4659d6bce5a6389fc401cd", "custom-51029671b88d51588283a73f3c684851", "custom-4f84936928075ef3a6e2c977e48d0a0a", "custom-2f4157dfe17a5807bcd80c74f304d9f3", "custom-853438954b5c5420a8d787c434bcba8a", "custom-330d575fae895bab8a284b746291301f", "custom-474bb6f66d7f5e32ba4137496f90e5cb"]);
 function hostGroup(track) {
   const title = (track.title || "").toLowerCase();
   if (track.kind === "audio_excerpt") return "audio";
@@ -2031,6 +2033,8 @@ function hostGroup(track) {
   if (title.startsWith("starlight insights")) return "glimmer";
   if (title.startsWith("great and powerful words")) return "magnificence";
   if (/^(?:a line from|from) the prayer of the corvid circle\b/i.test((track.announcement_text || "").trim()) || title.startsWith("corvid circle:")) return "corvid";
+  if (newObservatoryIds.has(track.id)) return "observatory";
+  if (pocketScienceIds.has(track.id)) return "pocket-science";
   if (Object.hasOwn(passageGroups, track.id)) return passageGroups[track.id];
   if (title.startsWith("arcana:")) return "arcana";
   return track.id.startsWith("custom-") ? "other" : "station";
@@ -2043,11 +2047,16 @@ function shuffledCopy(items) {
   }
   return queue;
 }
+function pacingKeys() {
+  const keys=[...hostGroups.keys()];
+  // New lessons expand the pool, not its original pacing-slot count.
+  return keys.some(k=>k!=="pocket-science" && pooledReadingGroups.has(k)) ? keys.filter(k=>k!=="pocket-science") : keys;
+}
 function refillHostCycle() {
   // Keep the same number and spacing of ordinary reading slots versus other
   // host turns. Any of the nine reading slots draws from the same shuffled bag.
-  const old = shuffledCopy([...hostGroups.keys()].filter(k=>!newReadingGroups.has(k)));
-  const fresh = shuffledCopy([...hostGroups.keys()].filter(k=>newReadingGroups.has(k)));
+  const old = shuffledCopy(pacingKeys().filter(k=>!newReadingGroups.has(k)));
+  const fresh = shuffledCopy(pacingKeys().filter(k=>newReadingGroups.has(k)));
   let useNew = lastHostGroup == null ? Math.random()<.5 : !newReadingGroups.has(lastHostGroup);
   const round = [];
   while (old.length || fresh.length) {
@@ -2083,7 +2092,13 @@ const storyOrder = [
   "custom-3085908eab1a56ea96620367ff37b4e7"
 ];
 const storyIds = new Set(storyOrder);
-const isStory = track => track?.kind === "intermission" && storyIds.has(track.id);
+const journeyOrder = ["custom-a08b4f4994ee5b259d575356fff3c81c", "custom-a8179ab8d93959499cb1438fe468575a", "custom-d0300076c13b5b648b78ae014f28d0f5", "custom-a1edc33869365f22a434dcf61883b795", "custom-1e580854a5ab55708168a36e29d951e9", "custom-182214d81c51587eac1c99e9b8153550", "custom-6e69df6d195052c18c57ebd0e3f5b0c7", "custom-c51ee173aef654cfb29013a65322bd5a", "custom-bab6980be4ba54128f43497d2c71dc08", "custom-4d90bbdb357c553da63a50caecaa2f76", "custom-aa2e3ae1c8fa576899e0bab91517f6ed", "custom-cca84c043cbc56309b023f2f990fc31b", "custom-559a98b73b8057119ed80952a4137e75", "custom-2671bb882a0955fbb025386a50bb1218", "custom-d165baa41e8351eba55ff9702befe981", "custom-aac9a52b73785c5da4c2dbafddf337d6", "custom-07ecc93b020c59c3b292c7b274879e8e", "custom-a01ac9b8d8f55baf919155cd67050b6c", "custom-5c3be75019865630a2bdbbbba44d9e43", "custom-6ed964728755537898ef6b83e43a7245", "custom-829b336513c15d569644884d4a6cbe90", "custom-1fdd986567bf552eb97166a9a5d2ab19", "custom-a8f0d7fa58a25b0e929b17c32455ebc6", "custom-244d3327d1ff59d0a4f5e6d5feb8129e"];
+const journeyIds = new Set(journeyOrder);
+const isJourney = track => track?.kind === "intermission" && journeyIds.has(track.id);
+const isStory = track => track?.kind === "intermission" && (storyIds.has(track.id) || journeyIds.has(track.id));
+let journeyPool=[], journeyCursor=0, journeyNext=journeyOrder[0], lastStorySeries=null;
+const hasStories=()=>Boolean(storyPool.length || journeyPool.length);
+const validJourneyNext=value=>journeyIds.has(value);
 let storyPool = [], storyCursor = 0, storiesStarted = 0, storyDebt = 0;
 // Separate durable story position from the schedule's ephemeral counters.
 let seriesNext = storyOrder[0];
@@ -2094,6 +2109,8 @@ function syncStoryCursor() {
   const index = storyOrder.indexOf(seriesNext);
   const next = storyPool.findIndex(t=>storyOrder.indexOf(t.id)===index);
   storyCursor = next < 0 ? storyPool.length : next;
+  const j=journeyPool.findIndex(t=>t.id===journeyNext);
+  journeyCursor=j<0?journeyPool.length:j;
 }
 function completeStory(track) {
   // Library replays, skips and failed recordings cannot advance an unrelated episode.
@@ -2101,11 +2118,20 @@ function completeStory(track) {
   if (validSeriesNext(record?.prefs?.seriesNext)) {
     seriesNext=record.prefs.seriesNext; syncStoryCursor();
   }
+  if (validJourneyNext(record?.prefs?.journeyNext)) {
+    journeyNext=record.prefs.journeyNext; syncStoryCursor();
+  }
+  if (isJourney(track)) {
+    if (track.id!==journeyNext || !journeyPool.includes(track)) return;
+    journeyNext=journeyOrder[(journeyOrder.indexOf(track.id)+1)%journeyOrder.length];
+    syncStoryCursor(); rememberSavePreferences({journeyNext}); dialsPaint(); return;
+  }
   if (!isStory(track) || track.id !== seriesNext || !storyPool.includes(track)) return;
   seriesNext=storyOrder[(storyOrder.indexOf(track.id)+1)%storyOrder.length];
   syncStoryCursor(); rememberSavePreferences({seriesNext}); dialsPaint();
 }
 function loadSeriesProgress(record) {
+  if (validJourneyNext(record?.prefs?.journeyNext)) journeyNext=record.prefs.journeyNext;
   if (validSeriesNext(record?.prefs?.seriesNext)) seriesNext=record.prefs.seriesNext;
   else if (record?.mark && storyPool.length) {
     // Old builds advanced on start. Rewind the currently unfinished story, if identifiable.
@@ -2131,7 +2157,7 @@ function storyTarget(seconds) {
   return storyTargets[storyTargets.length-1][1];
 }
 function accountStory(delta, start, track) {
-  if (!storyPool.length || !track || isDress(track) || isSendoffIntro(track) || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
+  if (!hasStories() || !track || isDress(track) || isSendoffIntro(track) || postKinds.has(track.kind) || soundKinds.has(track.kind) || track.kind === "station_intro") return;
   const end = start+delta, from = Math.max(start,600);
   if (end <= from) return;
   // Integrate piecewise-linear targets exactly across the listening thresholds.
@@ -2142,12 +2168,13 @@ function accountStory(delta, start, track) {
   storyDebt = Math.max(-1800,Math.min(1800,storyDebt+desired-(isStory(track)?end-from:0)));
 }
 function chooseStory() {
-  if (sessionSeconds < 600 || !storyPool.length || storyCursor >= storyPool.length ||
-      hostBlocks < 3 || (storiesStarted && hostBlocks - lastStoryBlock < 5)) return null;
-  const track=storyPool[storyCursor];
-  // Give the first story a natural entrance after ten minutes. Thereafter keep
-  // whole episodes and use airtime debt rather than random short-track counts.
-  return !storiesStarted || storyDebt >= .12*track.duration ? track : null;
+  if (sessionSeconds < 600 || !hasStories() || hostBlocks < 3 ||
+      (storiesStarted && hostBlocks-lastStoryBlock < 5)) return null;
+  const mirror=storyPool[storyCursor], journey=journeyPool[journeyCursor];
+  // Alternate episode opportunities; maintain the existing combined story
+  // airtime envelope. Never jump over an unavailable episode in either series.
+  const track=lastStorySeries==="mirror" ? journey||mirror : mirror||journey;
+  return track && (!storiesStarted || storyDebt >= .12*track.duration) ? track : null;
 }
 const postKinds = new Set(["post_intro", "post", "attachment_notice"]);
 const soundKinds = new Set(["music", "station_sound", "audio_excerpt", "sendoff_music"]);
@@ -2204,6 +2231,7 @@ function accountPlayback() {
 }
 function setupSessionMix() {
   storyPool = storyOrder.map(id=>program.stories.find(t=>t.id===id)).filter(Boolean);
+  journeyPool = journeyOrder.map(id=>program.stories.find(t=>t.id===id)).filter(Boolean);
   syncStoryCursor();
   hostPool = [...program.ordinaryBreaks, ...program.features];
   hostGroups = new Map(); hostCycle = []; lastHostGroup = null;
@@ -2214,7 +2242,7 @@ function setupSessionMix() {
   }
   pooledReadingBag = makeRateUpBag(hostPool.filter(t=>pooledReadingGroups.has(hostGroup(t))));
   sessionMix = Boolean(program.cadence.break_every && program.posts.length &&
-    (hostPool.filter(t => !soundKinds.has(t.kind)).length >= 4 || (storyPool.length && hostPool.some(t=>!soundKinds.has(t.kind)))));
+    (hostPool.filter(t => !soundKinds.has(t.kind)).length >= 4 || (hasStories() && hostPool.some(t=>!soundKinds.has(t.kind)))));
 }
 // The catalogue uses "intermission" for custom Astra readings as well as
 // station breaks. Manual Next targets readings, not scheduled station material.
@@ -2231,7 +2259,7 @@ function takeHostBlock(manual=false) {
   // the scheduled families stay pending for natural completion boundaries.
   const readingFamily=key=>hostGroups.get(key)?.items.every(isManualReading);
   if (manual && !hostCycle.some(readingFamily)) {
-    const regular=shuffledCopy([...hostGroups.keys()].filter(readingFamily));
+    const regular=shuffledCopy(pacingKeys().filter(readingFamily));
     if (regular.length>1 && regular[0]===lastHostGroup) [regular[0],regular[1]]=[regular[1],regular[0]];
     hostCycle.push(...regular);
   }
@@ -2330,8 +2358,9 @@ function playIntermission(track, autoplay=true, manual=false) {
   if (isStory(track)) {
     // Explicit library selection can jump to an episode. Automatic play never
     // shuffles the story; a completed finale wraps to episode one.
-    const i = storyPool.findIndex(t=>t.id===track.id);
-    if (i >= 0) storiesStarted++;
+    if (storyPool.includes(track) || journeyPool.includes(track)) {
+      storiesStarted++; lastStorySeries=isJourney(track)?"journey":"mirror";
+    }
     lastHostId=track.id; lastStoryBlock=hostBlocks+1;
   }
   if (sessionMix || postMode==="void") { hostBlocks++; hostStreak++; postStreak = 0; }
@@ -2401,13 +2430,13 @@ function makeRateUpBag(items) {
     if (!queue.length) queue=refill();
     const item=queue.shift(); previous=item.id; return item;
   };
-  take.snapshot = () => ({rateUp:2,queue:queue.map(t=>t.id),last:previous});
+  take.snapshot = () => ({rateUp:2,poolSize:unique.length,queue:queue.map(t=>t.id),last:previous});
   take.restore = value => {
     if (!value || !Array.isArray(value.queue)) return;
     previous=byTrack.has(value.last)?value.last:null;
     queue=[];
     // Pre-rate-up bookmarks begin a new weighted cycle, not an old quota.
-    if (value.rateUp!==2 || value.queue.length>2000) return;
+    if (value.rateUp!==2 || value.poolSize!==unique.length || value.queue.length>2000) return;
     const restored=[],counts=new Map();
     for (const id of value.queue) {
       if (!byTrack.has(id)) continue;
@@ -2819,33 +2848,42 @@ function play(bookmarkOffset = null) {
 
 // Presentation labels only: keep the original sound provenance in the playlist.
 const stationSoundLabels = Object.freeze({
-  "little-constellation": "chime",
-  "cosmic-drift": "cosmic sound",
-  "station-ambience": "ambient sound",
-  "quiet-transition": "transition sound",
-  "grounding": "low tone",
-  "quiet-harmony": "harmonic sound",
-  "friendship": "soft tone",
-  "cosmic-stillness": "cosmic sound",
-  "glimmer": "crystalline sound",
-  "magnificence": "great and powerful sound",
-  "ancient-harmony": "bell harmony",
-  "enchanted-library": "ambient sound",
-  "silver-sigil": "celestial sound",
-  "through-the-portal": "dimensional sound",
-  "corvid-sanctuary": "resonant sound",
-  "cosmic-garden": "soft celestial sound",
-  "violet-reverie": "crystalline sound",
-  "crystal-snowfall": "crystalline sound",
-  "velvet-curtain": "great and powerful sound",
-  "silver-flourish": "great and powerful sound",
-  "moonlit-pages": "ambient sound",
-  "everfree-twilight": "woodland sound",
-  "echoes-of-antiquity": "resonant sound",
-  "fourth-dimensional-signal": "dimensional sound",
-  "dress": "crystalline sound",
-  "dress-outro": "crystalline sound"
+  "little-constellation": "gentle constellation chime",
+  "cosmic-drift": "drifting cosmic tones",
+  "station-ambience": "quiet station atmosphere",
+  "quiet-transition": "soft transition tones",
+  "grounding": "warm grounding tone",
+  "quiet-harmony": "soft harmonic tones",
+  "friendship": "gentle friendship motif",
+  "cosmic-stillness": "quiet celestial atmosphere",
+  "glimmer": "soft crystalline glimmer",
+  "magnificence": "theatrical magical flourish",
+  "ancient-harmony": "resonant bell harmony",
+  "enchanted-library": "hushed library ambience",
+  "silver-sigil": "silver celestial shimmer",
+  "through-the-portal": "dimensional shimmer",
+  "corvid-sanctuary": "quiet resonant tones",
+  "cosmic-garden": "soft celestial garden tones",
+  "violet-reverie": "descending crystalline bells",
+  "crystal-snowfall": "scattered crystalline sparkles",
+  "velvet-curtain": "playful theatrical plucks",
+  "silver-flourish": "silver magical flourish",
+  "moonlit-pages": "soft page rustle and resonant notes",
+  "everfree-twilight": "gentle woodland atmosphere",
+  "echoes-of-antiquity": "distant resonant tones",
+  "fourth-dimensional-signal": "evolving cosmic radio shimmer",
+  "dress": "gentle harmonic swell",
+  "dress-outro": "gentle closing harmonic swell"
 });
+function stationSoundTitle(track) {
+  if (track.kind !== "station_sound") return stationDisplayTitle(track);
+  if (track.id === "station-sound-little-constellation-intro") return "little constellation outro";
+  if (track.id === "station-sound-little-constellation") return "little constellation" + (cueFrame?.intro === track ? " intro" : "");
+  const title = stationDisplayTitle(track);
+  if (track.id.endsWith("-intro") || track.id.endsWith("-outro")) return title;
+  // The original sound can also play independently as a station transition.
+  return title;
+}
 function stationSoundLabel(track) {
   const key = track.id.replace(/^station-sound-/, "").replace(/-intro$/, "");
   return Object.hasOwn(stationSoundLabels, key) ? stationSoundLabels[key] : "quiet sound";
@@ -2873,7 +2911,7 @@ function stationDisplayTitle(track) {
 
 // Transcript presentation only. Keep known names; source-case ambiguous short names.
 // The name vocabulary can be extended for future local scripts without touching their text.
-const transcriptProperNames = ["Great and Powerful Trixie", "Astra", "Kokoro", "Twilight Sparkle", "Sunset Shimmer", "Rainbow Dash", "Applejack", "Fluttershy", "Pinkie Pie", "Pinkie", "Celestia", "Luna", "Princess Celestia", "Princess Luna", "Princess Twilight", "Princess Twilight Sparkle", "Principal Celestia", "Vice Principal Luna", "Principal Cinch", "Canterlot", "Canterlot High", "Crystal Prep", "Crystal Prep Academy", "Equestria", "Equestrian", "Equestria Girls", "Equestria Land", "Ponyville", "Everfree", "Camp Everfree", "Gaea Everfree", "Friendship Games", "Fall Formal", "Freshman Fair", "Wondercolt", "Wondercolts", "Shadowbolts", "Rainbooms", "Dazzlings", "DJ Pon-3", "Adagio Dazzle", "Adagio", "Aria Blaze", "Sonata Dusk", "Babs Seed", "Babs", "Sweetie Belle", "Apple Bloom", "Scootaloo", "Mrs. Harshwhinny", "Harshwhinny", "Photo Finish", "Granny Smith", "Flim and Flam", "Flim", "Flam", "Diamond Dogs", "Diamond Dog", "Piggly Wiggly", "MyStable", "Anon-a-Miss", "Lyra Heartstrings", "Sweetie Drops", "Pixel Pizzaz", "Violet Blurr", "Miss Cheerilee", "Cheerilee", "Everton", "Cinch", "Gloriosa Daisy", "Gloriosa", "Crystal Ball", "Crystal Gala", "Chance to Prance", "Sour Sweet", "Sugarcoat", "Sunny Flare", "Lemon Zest", "Daring Do", "Canter Zoom", "Juniper Montage", "Chestnut Magnifico", "Starlight Glimmer", "Canterlot Movie Club", "Countess Coloratura", "Prim Hemline", "Flanksy", "Lily Pad", "Cranky Doodle", "Mr. Cranky Doodle", "Mr. Doodle", "Bulk Biceps", "Micro Chips", "Club Amethyst", "Fairy Bootmother", "Shiny City", "Cousin Goldie", "Wallflower Blush", "Memory Stone", "Sweet Snacks Café", "Sweet Snacks Cafe", "Vignette Valencia", "Rosette Nebula", "Canterlot Pet Show", "Fluffersnuff", "Winona", "A. K. Yearling", "A.K. Yearling", "AK Yearling", "Coach Comet Chaser", "Comet Chaser", "Sugarcube Corner", "Luxe Deluxe", "Storm King", "Starswirled Music Festival", "Starswirled", "PostCrush", "K-Lo", "Su-Z", "Time Twirler", "Princess Thunder Guts", "Dirk Thistleweed", "MC Dex Effex", "Skull Cruncher", "JVJ-24601", "JVJ", "My Little Pony", "Elements of Harmony", "Element of Harmony", "Mane Six", "Young Six", "Tree of Harmony", "Castle of Friendship", "School of Friendship", "Council of Friendship", "Crystal Empire", "Crystal Heart", "Nightmare Moon", "Princess Cadance", "Cadance", "Shining Armor", "Rockhoof", "Mage Meadowbrook", "Meadowbrook", "Somnambula", "Mistmane", "Flash Magnus", "Star Swirl", "Starswirl", "Star Swirl the Bearded", "Stygian", "Luster Dawn", "Cozy Glow", "Chrysalis", "Tirek", "Sombra", "Moon Dancer", "Moondancer", "Cheese Sandwich", "Coco Pommel", "Silver Shill", "Spitfire", "Wonderbolts", "Cutie Mark Crusaders", "Diamond Tiara", "Ocellus", "Smolder", "Silverstream", "Gallus", "Yona", "Sandbar", "Timber Spruce", "Midnight Sparkle", "Daydream Shimmer", "Sunset Shimmer's Backstage Pass", "Twilight's Kingdom", "The Cutie Re-Mark", "The Cutie Mark Chronicles", "The Last Problem", "Forgotten Friendship", "Rainbow Rocks", "Legend of Everfree", "Rollercoaster of Friendship", "Spring Breakdown", "Holidays Unwrapped", "Dance Magic", "Movie Magic", "Mirror Magic", "Shake Your Tail", "Awesome as I Wanna Be", "Welcome to the Show", "My Past Is Not Today", "Life Is a Runway", "Friendship Through the Ages", "Run to Break Free", "Get Up and Dance", "I'm on a Yacht", "Find the Magic", "Let It Rain", "Perfect Day for Fun", "Whack-a-Mole", "Fashion Week", "Young Farmers’ Club", "Battle of the Bands", "Blitzball", "Boston", "Monday", "Tuesday", "Wednesday", "Wednesdays", "Thursday", "Friday", "Saturday", "Sunday", "Einstein", "Newton", "Feynman", "Heisenberg", "Schrödinger", "Schrodinger", "Planck", "Bohr", "Dirac", "Everett", "Rovelli", "Shannon", "Landauer", "Zurek", "Lindblad", "Pauli", "Wootters", "Watrous", "Preskill", "Deutsch", "Pythagoras", "Plato", "Aristotle", "Hermes Trismegistus", "Hermes", "Thoth", "Hecate", "Isis", "Osiris", "Anubis", "Odin", "Freya", "Freyja", "Apollo", "Athena", "Aphrodite", "Dionysus", "Persephone", "Demeter", "Zeus", "Hades", "Poseidon", "Artemis", "Brigid", "Morrígan", "Morrigan", "Mithras", "Buddha", "Buddhism", "Hinduism", "Christianity", "Judaism", "Islam", "Kabbalah", "Qabalah", "Hermeticism", "Taoism", "Daoism", "Shinto", "Tarot de Marseille", "Rider-Waite-Smith", "Aleister Crowley", "Arthur Edward Waite", "Pamela Colman Smith", "Carl Jung", "Jung", "Sirius", "Andromeda", "Orion", "Pleiades", "Milky Way", "Neptune", "Jupiter", "Saturn", "Uranus", "Pluto", "Grogar", "Father of Monsters", "Gusty the Great", "Bewitching Bell", "Mount Everhoof", "Chancellor Puddinghead", "Smart Cookie", "Commander Hurricane", "Private Pansy", "Princess Platinum", "Clover the Clever", "Hearth’s Warming", "Hearth's Warming", "Fire of Friendship", "Pillars of Old Equestria", "Ponhenge", "Pony of Shadows", "Everfree Forest", "Opaline Arcana", "Opaline", "Skyros", "King Sombra", "Princess of Friendship", "Flurry Heart", "Sunny Starscout", "Cutie Map", "Alicorn Amulet", "Windigos", "Niriks", "Stream of Silence", "Tantabus", "Tartarus", "Cerberus", "Crystal Mirror", "Cloudsdale", "Manehattan", "Appleloosa", "Castle of the Two Sisters", "Dragon Lands", "Dragon Lord", "Bloodstone Scepter", "Gauntlet of Fire", "Isle of Scaly", "Dragonstone", "Griffonstone", "Idol of Boreas", "King Grover", "King Guto", "Arimaspi", "Yakyakistan", "Queen Chrysalis", "Thorax", "Mount Aris", "Seaquestria", "Queen Novo", "Klugetown", "Abyssinia", "Scorpan", "Fire Alicorn", "Unity Crystals", "Maretime Bay", "Argyle Starshine", "Bridlewood", "Zephyr Heights", "Together Trees", "Sparky", "Huginn", "Muninn", "Italy", "Norse", "Egypt", "Denmark", "Dhumavati", "Mahakala", "Jigme Namgyel", "Bhutan", "Hindu", "Buddhist", "Islamicate", "British Museum", "Metropolitan Museum", "Hugging Face", "Hugging Face Swarm", "Hilbert", "Breezies", "Wonderbolt", "Steven Magnet", "Sassy Saddles", "Cranky Doodle Donkey", "Capper", "Grand Galloping Gala", "Nightmare Night", "Amity Ball", "Shadow Spade", "Mean Six", "Pillars of Equestria", "Rainbow Falls", "Rainbow Power", "Element of Kindness", "Rarity Takes Manehattan", "Magical Mystery Cure", "Every Little Thing She Does", "To Where and Back Again", "Discordant Harmony", "Leap of Faith", "Pinkie Pride", "Epic of Gilgamesh", "It's About Time", "It’s About Time", "I’m on a Yacht", "Prayer of the Corvid Circle", "Kokoro-82M"];
+const transcriptProperNames = ["Abies", "Abies grandis", "Abies procera", "Acer circinatum", "Acer macrophyllum", "Alnus rubra", "Amanita muscaria", "Amanita phalloides", "Arbutus menziesii", "Armillaria", "Betula papyrifera", "Boltzmann", "Cantharellus formosus", "Cedrus", "CERN", "Cornus nuttallii", "Darwin", "Douglas", "Fermi", "Frankia", "Gödel", "Hawking", "Hericium", "Hericium abietis", "Hubble", "Larix occidentalis", "Lorentz", "Maxwell", "Mendel", "Minkowski", "Morchella", "NASA", "NIST", "Noether", "Pacific Northwest", "Picea sitchensis", "Pinus", "Pinus contorta", "Pinus monticola", "Pinus ponderosa", "Pseudotsuga", "Pseudotsuga menziesii", "Quercus garryana", "Stereum", "Thuja", "Thuja plicata", "Trametes versicolor", "Tsuga heterophylla", "Tsuga mertensiana", "Great and Powerful Trixie", "Astra", "Kokoro", "Twilight Sparkle", "Sunset Shimmer", "Rainbow Dash", "Applejack", "Fluttershy", "Pinkie Pie", "Pinkie", "Celestia", "Luna", "Princess Celestia", "Princess Luna", "Princess Twilight", "Princess Twilight Sparkle", "Principal Celestia", "Vice Principal Luna", "Principal Cinch", "Canterlot", "Canterlot High", "Crystal Prep", "Crystal Prep Academy", "Equestria", "Equestrian", "Equestria Girls", "Equestria Land", "Ponyville", "Everfree", "Camp Everfree", "Gaea Everfree", "Friendship Games", "Fall Formal", "Freshman Fair", "Wondercolt", "Wondercolts", "Shadowbolts", "Rainbooms", "Dazzlings", "DJ Pon-3", "Adagio Dazzle", "Adagio", "Aria Blaze", "Sonata Dusk", "Babs Seed", "Babs", "Sweetie Belle", "Apple Bloom", "Scootaloo", "Mrs. Harshwhinny", "Harshwhinny", "Photo Finish", "Granny Smith", "Flim and Flam", "Flim", "Flam", "Diamond Dogs", "Diamond Dog", "Piggly Wiggly", "MyStable", "Anon-a-Miss", "Lyra Heartstrings", "Sweetie Drops", "Pixel Pizzaz", "Violet Blurr", "Miss Cheerilee", "Cheerilee", "Everton", "Cinch", "Gloriosa Daisy", "Gloriosa", "Crystal Ball", "Crystal Gala", "Chance to Prance", "Sour Sweet", "Sugarcoat", "Sunny Flare", "Lemon Zest", "Daring Do", "Canter Zoom", "Juniper Montage", "Chestnut Magnifico", "Starlight Glimmer", "Canterlot Movie Club", "Countess Coloratura", "Prim Hemline", "Flanksy", "Lily Pad", "Cranky Doodle", "Mr. Cranky Doodle", "Mr. Doodle", "Bulk Biceps", "Micro Chips", "Club Amethyst", "Fairy Bootmother", "Shiny City", "Cousin Goldie", "Wallflower Blush", "Memory Stone", "Sweet Snacks Café", "Sweet Snacks Cafe", "Vignette Valencia", "Rosette Nebula", "Canterlot Pet Show", "Fluffersnuff", "Winona", "A. K. Yearling", "A.K. Yearling", "AK Yearling", "Coach Comet Chaser", "Comet Chaser", "Sugarcube Corner", "Luxe Deluxe", "Storm King", "Starswirled Music Festival", "Starswirled", "PostCrush", "K-Lo", "Su-Z", "Time Twirler", "Princess Thunder Guts", "Dirk Thistleweed", "MC Dex Effex", "Skull Cruncher", "JVJ-24601", "JVJ", "My Little Pony", "Elements of Harmony", "Element of Harmony", "Mane Six", "Young Six", "Tree of Harmony", "Castle of Friendship", "School of Friendship", "Council of Friendship", "Crystal Empire", "Crystal Heart", "Nightmare Moon", "Princess Cadance", "Cadance", "Shining Armor", "Rockhoof", "Mage Meadowbrook", "Meadowbrook", "Somnambula", "Mistmane", "Flash Magnus", "Star Swirl", "Starswirl", "Star Swirl the Bearded", "Stygian", "Luster Dawn", "Cozy Glow", "Chrysalis", "Tirek", "Sombra", "Moon Dancer", "Moondancer", "Cheese Sandwich", "Coco Pommel", "Silver Shill", "Spitfire", "Wonderbolts", "Cutie Mark Crusaders", "Diamond Tiara", "Ocellus", "Smolder", "Silverstream", "Gallus", "Yona", "Sandbar", "Timber Spruce", "Midnight Sparkle", "Daydream Shimmer", "Sunset Shimmer's Backstage Pass", "Twilight's Kingdom", "The Cutie Re-Mark", "The Cutie Mark Chronicles", "The Last Problem", "Forgotten Friendship", "Rainbow Rocks", "Legend of Everfree", "Rollercoaster of Friendship", "Spring Breakdown", "Holidays Unwrapped", "Dance Magic", "Movie Magic", "Mirror Magic", "Shake Your Tail", "Awesome as I Wanna Be", "Welcome to the Show", "My Past Is Not Today", "Life Is a Runway", "Friendship Through the Ages", "Run to Break Free", "Get Up and Dance", "I'm on a Yacht", "Find the Magic", "Let It Rain", "Perfect Day for Fun", "Whack-a-Mole", "Fashion Week", "Young Farmers’ Club", "Battle of the Bands", "Blitzball", "Boston", "Monday", "Tuesday", "Wednesday", "Wednesdays", "Thursday", "Friday", "Saturday", "Sunday", "Einstein", "Newton", "Feynman", "Heisenberg", "Schrödinger", "Schrodinger", "Planck", "Bohr", "Dirac", "Everett", "Rovelli", "Shannon", "Landauer", "Zurek", "Lindblad", "Pauli", "Wootters", "Watrous", "Preskill", "Deutsch", "Pythagoras", "Plato", "Aristotle", "Hermes Trismegistus", "Hermes", "Thoth", "Hecate", "Isis", "Osiris", "Anubis", "Odin", "Freya", "Freyja", "Apollo", "Athena", "Aphrodite", "Dionysus", "Persephone", "Demeter", "Zeus", "Hades", "Poseidon", "Artemis", "Brigid", "Morrígan", "Morrigan", "Mithras", "Buddha", "Buddhism", "Hinduism", "Christianity", "Judaism", "Islam", "Kabbalah", "Qabalah", "Hermeticism", "Taoism", "Daoism", "Shinto", "Tarot de Marseille", "Rider-Waite-Smith", "Aleister Crowley", "Arthur Edward Waite", "Pamela Colman Smith", "Carl Jung", "Jung", "Sirius", "Andromeda", "Orion", "Pleiades", "Milky Way", "Neptune", "Jupiter", "Saturn", "Uranus", "Pluto", "Grogar", "Father of Monsters", "Gusty the Great", "Bewitching Bell", "Mount Everhoof", "Chancellor Puddinghead", "Smart Cookie", "Commander Hurricane", "Private Pansy", "Princess Platinum", "Clover the Clever", "Hearth’s Warming", "Hearth's Warming", "Fire of Friendship", "Pillars of Old Equestria", "Ponhenge", "Pony of Shadows", "Everfree Forest", "Opaline Arcana", "Opaline", "Skyros", "King Sombra", "Princess of Friendship", "Flurry Heart", "Sunny Starscout", "Cutie Map", "Alicorn Amulet", "Windigos", "Niriks", "Stream of Silence", "Tantabus", "Tartarus", "Cerberus", "Crystal Mirror", "Cloudsdale", "Manehattan", "Appleloosa", "Castle of the Two Sisters", "Dragon Lands", "Dragon Lord", "Bloodstone Scepter", "Gauntlet of Fire", "Isle of Scaly", "Dragonstone", "Griffonstone", "Idol of Boreas", "King Grover", "King Guto", "Arimaspi", "Yakyakistan", "Queen Chrysalis", "Thorax", "Mount Aris", "Seaquestria", "Queen Novo", "Klugetown", "Abyssinia", "Scorpan", "Fire Alicorn", "Unity Crystals", "Maretime Bay", "Argyle Starshine", "Bridlewood", "Zephyr Heights", "Together Trees", "Sparky", "Huginn", "Muninn", "Italy", "Norse", "Egypt", "Denmark", "Dhumavati", "Mahakala", "Jigme Namgyel", "Bhutan", "Hindu", "Buddhist", "Islamicate", "British Museum", "Metropolitan Museum", "Hugging Face", "Hugging Face Swarm", "Hilbert", "Breezies", "Wonderbolt", "Steven Magnet", "Sassy Saddles", "Cranky Doodle Donkey", "Capper", "Grand Galloping Gala", "Nightmare Night", "Amity Ball", "Shadow Spade", "Mean Six", "Pillars of Equestria", "Rainbow Falls", "Rainbow Power", "Element of Kindness", "Rarity Takes Manehattan", "Magical Mystery Cure", "Every Little Thing She Does", "To Where and Back Again", "Discordant Harmony", "Leap of Faith", "Pinkie Pride", "Epic of Gilgamesh", "It's About Time", "It’s About Time", "I’m on a Yacht", "Prayer of the Corvid Circle", "Kokoro-82M"];
 const transcriptSourceCaseNames = ["Glimmer", "Twilight", "Sunset", "Rainbow", "Rarity", "Spike", "Trixie", "Maud", "Apples", "Apple", "Granny", "Big Mac", "Wallflower", "Vignette", "Tank", "Gummy", "Lily", "Juniper", "Dirk", "Sunflower", "Boulder", "Pie", "Lyra", "Midnight", "Starlight", "Goldie", "Ray", "Randolph", "Zephyr", "Rosette", "Banana", "Screech", "Yearling", "Aria", "Sonata", "Snips", "Snails", "Bulk", "Selfie", "Dazzled", "Games", "Celestias", "Daisy", "Discord", "Boneless", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Bell", "Earth", "Solar System", "Sardines", "Ferris", "Gusty", "Pillars", "Tree", "Heart", "Element", "Elements", "Ember", "Argyle", "Sunny", "Grover", "Guto", "Novo", "Puddinghead", "Hurricane", "Pansy", "Platinum", "Clover", "Friendship Is Magic", "Limbo", "The Perfect Pear", "Perfect Pear", "Shadow Play", "Uprooted", "Raven Crown", "Flood Tablet", "Sweet Snacks", "Dash", "GPS", "RV", "DJ"];
 const transcriptStationPhrases = new Map([
   ["starlight insights, affirmations that glimmer", "Starlight insights, affirmations that glimmer"],
@@ -2919,13 +2957,13 @@ function hostDisplayText(track, announcement, post) {
 }
 
 function readout(post) {
-  const cueTitle = current.id === "station-sound-little-constellation-intro" ? "little constellation outro" : current.id === "station-sound-little-constellation" && cueFrame?.intro === current ? "little constellation intro" : stationDisplayTitle(current);
+  const cueTitle = stationSoundTitle(current);
   byId("title").textContent = isSendoff(current) ? sendoffTitle : current.kind === "music" ? musicTitle : post ? post.title : (isAside(current) || isSegue(current) || isSendoffIntro(current)) ? "astra" : cueTitle || segmentNames[current.kind];
   if (post) {
     const date = shortDate(post.body.date);
     byId("details").textContent = segmentNames[current.kind] + (date ? " · " + date : "");
   } else {
-    let details = isStory(current) ? "astra · through the mirror" : "astra · speaking with kokoro";
+    let details = isJourney(current) ? "astra · anywhere, anywhen" : isStory(current) ? "astra · through the mirror" : "astra · speaking with kokoro";
     if (isSendoffIntro(current)) details = "astra · signal interference";
     if (current.kind === "music") details = "musical excerpt · 9 seconds";
     if (isSendoff(current)) details = "musical intermission · 3:20";
@@ -3264,6 +3302,9 @@ function dialsPaint() {
   byId("dials-mode-help").textContent={automatic:"restart a stale schedule without losing series progress.",fresh:"start at the station opening each time you reopen the radio.",resume:"continue from your saved broadcast position."}[dialsMode];
   const series=byId("dials-series");
   const completed=Math.max(0,storyOrder.indexOf(seriesNext));
+  const journeyStatus=byId("dials-journey"), journeyReset=byId("dials-journey-reset");
+  if (journeyStatus) journeyStatus.textContent=!program?"finding the series…":!journeyPool[journeyCursor]?"next episode is unavailable in this release":`${journeyOrder.indexOf(journeyNext)} of ${journeyOrder.length} episodes completed · next: ${journeyPool[journeyCursor].title}`;
+  if (journeyReset) journeyReset.disabled=!journeyPool.length;
   series.textContent=!program?"finding the series…":!storyPool[storyCursor]?"next episode is unavailable in this release":`${completed} of ${storyOrder.length} episodes completed · next: ${storyPool[storyCursor].title.replace(/^astra\s*·\s*/i,"")}`;
   byId("dials-pins").hidden=!dressPinned;
 }
@@ -3349,6 +3390,7 @@ function rememberApplyPreferences(value) {
   const prefs=rememberPreferences(value);
   dialsMode=prefs.scheduleMode; dialsIdle=prefs.idleHours; dialsMax=prefs.maxHours;
   if (validSeriesNext(prefs.seriesNext)) { seriesNext=prefs.seriesNext; syncStoryCursor(); }
+  if (validJourneyNext(prefs.journeyNext)) { journeyNext=prefs.journeyNext; syncStoryCursor(); }
   let changed=prefs.favorites.length!==rememberFavorites.size || prefs.favorites.some(id=>!rememberFavorites.has(id));
   if (changed) { rememberFavorites.clear(); for (const id of prefs.favorites) rememberFavorites.add(id); }
   if (postMode!==prefs.postMode) { setPostMode(prefs.postMode); changed=true; }
@@ -3404,7 +3446,7 @@ function rememberSave(force = false, offset = null) {
     rotation: {cycle:hostCycle, lastGroup:lastHostGroup,
       readings:pooledReadingBag?.snapshot() ?? null,
       groups:[...hostGroups].map(([key,g])=>[key,{queue:g.queue.map(t=>t.id),last:g.last}]),
-      lastStoryBlock, nextSessionAsideAt,
+      lastStoryBlock, lastStorySeries, nextSessionAsideAt,
       lastSessionAsideSeconds:Number.isFinite(lastSessionAsideSeconds)?lastSessionAsideSeconds:null,
       asides:asideBag?.snapshot() ?? null},
     sendoffNextAt, sendoffFrame:sendoffFrame ? {resume:sendoffFrame.resume} : null,
@@ -3471,6 +3513,7 @@ function rememberRestore(mark) {
   syncStoryCursor(); storiesStarted=integer(mark.storiesStarted); storyDebt=num(mark.storyDebt,-1800,1800);
   lastHostId=typeof mark.lastHostId === "string" && get(mark.lastHostId) ? mark.lastHostId : null;
   const rotation=mark.rotation;
+  lastStorySeries=["mirror","journey"].includes(rotation?.lastStorySeries)?rotation.lastStorySeries:(storiesStarted?"mirror":null);
   // Earlier family-specific and unweighted bags begin a fresh rate-up cycle,
   // avoiding the last known pooled reading. Rate-up bookmarks resume their
   // remaining tickets, including the empty end-of-cycle state.
@@ -3551,7 +3594,7 @@ function startOver() {
   sessionSeconds = accountedSeconds = postDebt = postStreak = hostStreak = hostBlocks = voidLastIdBlock = 0;
   hostCycle = []; hostGroups.clear(); lastHostId = lastHostGroup = null;
   lastStoryBlock = -3; nextSessionAsideAt = 2; lastSessionAsideSeconds = -Infinity;
-  storiesStarted = storyDebt = 0; syncStoryCursor();
+  storiesStarted = storyDebt = 0; lastStorySeries=null; syncStoryCursor();
   lastAside = 0; nextAsideAt = 1;
   soundBoundary = 0; previousBoundaryHadCue = false; lastCueBoundary.clear();
   cueFrame = pendingPassage = null;
@@ -3610,6 +3653,13 @@ function rememberInit() {
       byId("dials-result").textContent="series progress reset.";
     });
   });
+  byId("dials-journey-reset")?.addEventListener("click",()=>{
+    if (!program || !journeyPool.length) return;
+    confirmRadioAction("reset journey progress?", "anywhere, anywhen will begin again at its first episode. the other series and broadcast schedule will not change.", ()=>{
+      journeyNext=journeyOrder[0]; syncStoryCursor(); rememberSavePreferences({journeyNext}); rememberSave(true); dialsPaint();
+      byId("dials-result").textContent="journey progress reset.";
+    });
+  });
   byId("start-over-no").addEventListener("click",()=>{
     pendingConfirmation=null;
     if (resetDialog.open) resetDialog.close();
@@ -3643,7 +3693,7 @@ function rememberInit() {
     try {
       const token=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
       rememberClearLegacy();
-      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],postMode,shuffle:postMode==="on",dressPinned,seriesNext,scheduleMode:dialsMode,idleHours:dialsIdle,maxHours:dialsMax}});
+      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],postMode,shuffle:postMode==="on",dressPinned,seriesNext,journeyNext,scheduleMode:dialsMode,idleHours:dialsIdle,maxHours:dialsMax}});
       rememberToken=token; rememberPaint(); rememberSave(true);
     } catch { rememberToken=null; rememberPaint(); rememberStatus("local storage is unavailable on this device."); }
   });
