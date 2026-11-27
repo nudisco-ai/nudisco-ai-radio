@@ -28,6 +28,42 @@ window.NUDISCO_PLAYLIST = {
       "title": "station introduction"
     },
     {
+      "announcement_text": "next, an untitled post from november 27, 2026.",
+      "attachments": [],
+      "audio_sha256": "cd96a5ff47f3d03f5972fb7ea386ea1900b36b4456d7431932f16cf61f8c7a64",
+      "audio_url": "audio/cc8ec06c4e1cccdd7c078497fed23d01f4b69fc3a7f99d15179c44164d1748ec.mp3",
+      "content_hash": "c95c0431870dc59e09a95f7d54214cb1bd25a33bd93a4f31e50cc1fee6d8983f",
+      "date": "2026-11-27T05:02:48-08:00",
+      "difficult_attachment": false,
+      "duration": 5.9937,
+      "edition": "regular",
+      "has_title": false,
+      "id": "intro:20261127-050248-aye-lad-i-won-t-forget-how-my-good-morning-e50e",
+      "kind": "post_intro",
+      "post_id": "20261127-050248-aye-lad-i-won-t-forget-how-my-good-morning-e50e",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261127-050248-aye-lad-i-won-t-forget-how-my-good-morning-e50e",
+      "speed": 1.5,
+      "title": "untitled post"
+    },
+    {
+      "attachments": [],
+      "audio_sha256": "33ba869a17540a698a04f9064a6bf41c5b76cc65428f596e178c75eb1ae93abe",
+      "audio_url": "audio/9975102f5b56ae662b27cfb539258ae336f78244d19503c0f1ac5a00a247917a.mp3",
+      "authored_text": "aye lad, i won't forget how my \"good morning\" was treated as strange, then my  ignoring got me \"what a piece of ⟦−∞⟧!\". classic",
+      "content_hash": "3e9ab0121fa403f74f9d726414e110efc5151c16ccb9afc2d1cfdef9acf9c1c9",
+      "date": "2026-11-27T05:02:48-08:00",
+      "difficult_attachment": false,
+      "duration": 9.7053,
+      "edition": "regular",
+      "has_title": false,
+      "id": "post:20261127-050248-aye-lad-i-won-t-forget-how-my-good-morning-e50e",
+      "kind": "post",
+      "post_id": "20261127-050248-aye-lad-i-won-t-forget-how-my-good-morning-e50e",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261127-050248-aye-lad-i-won-t-forget-how-my-good-morning-e50e",
+      "speed": 1.5,
+      "title": "untitled post"
+    },
+    {
       "announcement_text": "the next post is SURPRISE!! it includes an attachment.",
       "attachments": [
         {
