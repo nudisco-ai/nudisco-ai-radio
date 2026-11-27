@@ -229,3 +229,16 @@ body:not(.astra-app) .transport .remember-row > button:is(#remember-toggle, #sta
 #dials-open .dial-icon {width:17px;height:17px;}
 #dials-storage-status {color:var(--signal);font-size:.8rem;}
 #dials-storage-status:empty {display:none;}
+
+/* Desktop/mobile web radio: native shuffle preference next to transport buttons. */
+body:not(.astra-app) .buttons > .transport-shuffle {display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:0 0 min(9rem, calc((100% - var(--radio-control-gap)) / 2));min-height:44px;min-width:0;padding:0 8px;border:1px solid var(--line);color:var(--signal);font-size:.8rem;font-weight:700;line-height:1.35;cursor:pointer;}
+body:not(.astra-app) .buttons > .transport-shuffle input {margin:0;accent-color:var(--signal);flex:none;}
+body:not(.astra-app) .buttons > .transport-shuffle:is([data-mode="on"],[data-mode="void"]) {border-color:var(--signal);color:var(--focus);}
+
+body:not(.astra-app) .buttons > .transport-shuffle[data-mode="void"] .shuffle-icon {opacity:.45;}
+
+/* Quiet, explicit local memory control on both home screens. */
+.home-memory {display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0;color:var(--signal);font-size:.75rem;}
+#remember-home-toggle {min-height:44px;padding:0 10px;font:inherit;font-size:.8rem;line-height:1.2;color:var(--signal);background:var(--bg);border:1px solid var(--line);cursor:pointer;}
+#remember-home-toggle[aria-pressed="true"] {border-color:var(--signal);color:var(--focus);}
+#remember-home-toggle:disabled {opacity:.5;cursor:default;}

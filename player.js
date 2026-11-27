@@ -1502,7 +1502,39 @@ let nextIndex = 0;
 let chosenFirst = null;
 let shuffledOrder = [];
 let shuffleCursor = 0;
-let shuffled = false;
+// Three modes affect original post readings only, never the independent host/timed bags.
+const postModes = ["off", "on", "void"];
+const postModeLabels = {off:"shuffle off", on:"shuffle on", void:"void posts"};
+const postModeHelp = {off:"nudisco ai blog posts in catalogue order", on:"nudisco ai blog posts in random order", void:"no automatic nudisco ai blog post readings; all other programming remains"};
+let postMode = "off";
+function paintPostMode() {
+  const button=byId("shuffle");
+  button.dataset.mode=postMode;
+  button.querySelector(".post-mode-label").textContent=postModeLabels[postMode];
+  button.setAttribute("aria-label",postModeLabels[postMode]+" · "+postModeHelp[postMode]+" · next: "+postModeLabels[postModes[(postModes.indexOf(postMode)+1)%3]]);
+  button.title=postModeHelp[postMode]+". activate to cycle post mode.";
+  button.disabled=!program || !program.posts.length;
+  const next=byId("next"), label=next.querySelector(".next-label");
+  const text=postMode==="void"?"next segment":"next post";
+  if (label) label.textContent=text;
+  next.setAttribute("aria-label",text); next.title=text;
+  if (program) next.disabled=!started || (postMode!=="void" && !program.posts.length);
+}
+function setPostMode(mode) {
+  if (!postModes.includes(mode)) mode="off";
+  if (mode!==postMode) {
+    // Keep ordinary off/on changes identical to the original shuffle control.
+    // Only crossing the void boundary resets the now-inapplicable speech debt.
+    if (mode==="void" || postMode==="void") {
+      accountPlayback();
+      postDebt=0; postStreak=hostStreak=0;
+      voidLastIdBlock=hostBlocks;
+    }
+    postMode=mode;
+    if (program) arrange(chosenFirst ?? currentPost,true);
+  }
+  paintPostMode();
+}
 let started = false;
 let playing = false;
 let attempt = 0;
@@ -1625,14 +1657,14 @@ function dressTogglePin() {
   if (!dressAvailable()) return;
   dressPinned=!dressPinned; dressPaint();
   if (rememberConsentRecord()) rememberSavePreferences({dressPinned});
-  else if (dressPinned) rememberRequestConsent();
+  // Without memory, a pin is simply a current-visit preference.
 }
 function dressInitUI() {
   for (const id of ["dress-pin","dress-tab-pin"]) byId(id)?.addEventListener("click",dressTogglePin);
   for (const id of ["dress-download","dress-tab-download"]) byId(id)?.addEventListener("click",dressDownload);
   byId("dress-catalogue").addEventListener("toggle",()=>{if(byId("dress-catalogue").open) dressRender(byId("dress-inline-reader")?"dress-inline-reader":"dress-reader");});
 }
-function startFramedBreak(track, segue) {
+function startFramedBreak(track, segue, autoplay=true) {
   const eligible = ["intermission", "feature_intermission"].includes(track.kind) && !isAside(track) && !isSegue(track);
   let outro = eligible ? soundAfterSpeech(track, program) : null;
   let intro = outro?.kind === "station_sound" ? program.introSounds?.get(outro.id + "-intro") : null;
@@ -1641,9 +1673,9 @@ function startFramedBreak(track, segue) {
   if (outro?.id === "station-sound-little-constellation" && intro) [intro, outro] = [outro, intro];
   const target = segue || track;
   cueFrame = eligible ? {intro, target, passage: track, outro} : null;
-  if (intro) { show(intro, true); return; }
+  if (intro) { show(intro, autoplay); return; }
   if (segue) pendingPassage = track;
-  show(target, true);
+  show(target, autoplay);
 }
 function continueCueIntro(autoplay) {
   if (!cueFrame || !cueFrame.intro || current !== cueFrame.intro) return false;
@@ -1704,7 +1736,7 @@ function refillHostCycle() {
   if (round.length>1 && round[0]===lastHostGroup) [round[0],round[1]]=[round[1],round[0]];
   hostCycle=round;
 }
-let sessionMix = false, postStreak = 0, hostStreak = 0, hostBlocks = 0;
+let sessionMix = false, postStreak = 0, hostStreak = 0, hostBlocks = 0, voidLastIdBlock = 0;
 // Story entries remain native custom speech; their ordered IDs are editorial metadata.
 const storyOrder = [
   "custom-1883188b3aaf568dbad47414fe61a960",
@@ -1820,7 +1852,7 @@ function accountPlayback() {
   const [posts, host] = sessionTarget(sessionSeconds+delta/2);
   accountStory(delta,sessionSeconds,current);
   sessionSeconds += delta;
-  if (!soundKinds.has(current.kind) && !isDress(current) && !isSendoffIntro(current)) {
+  if (postMode!=="void" && !soundKinds.has(current.kind) && !isDress(current) && !isSendoffIntro(current)) {
     // A bounded running error prevents a single long track from monopolizing later choices.
     const desired = posts/(posts+host);
     postDebt = Math.max(-120, Math.min(120, postDebt + delta*((postKinds.has(current.kind) ? 1 : 0)-desired)));
@@ -1870,7 +1902,29 @@ function sessionAside() {
   }
   return chosen;
 }
+// In void mode, host blocks continue without the normal post debt/streak cap.
+// The same family bags, story position, asides and timed specials remain in charge.
+function pauseVoid(text) {
+  ++attempt; playing=false; audio.pause(); message(text); paintControls();
+}
+function continueVoid(autoplay) {
+  const aside=sessionAside();
+  if (aside) { show(aside,autoplay); return; }
+  // If the station enables periodic IDs, use host blocks as the substitute
+  // for completed blog readings during void mode. Zero still means disabled.
+  const cadence=program.cadence.short_id_every;
+  if (program.shortId && cadence && hostBlocks-voidLastIdBlock>=cadence && current!==program.shortId) {
+    voidLastIdBlock=hostBlocks; show(program.shortId,autoplay); return;
+  }
+  const track=takeHostBlock();
+  if (track) { lastBreak=lastAnnouncement=completions; playIntermission(track,autoplay); return; }
+  // An audio-only family can be temporarily ineligible after a sound.
+  // A spoken station ID provides a safe boundary, never a post fallback.
+  if (program.shortId && current!==program.shortId && hostPool.length) { show(program.shortId,autoplay); return; }
+  pauseVoid("no more astra segments are available in this release. choose a recording or change post mode.");
+}
 function continueSession(afterPost = false) {
+  if (postMode==="void") { takePost(true); return; }
   const early = sessionSeconds < 1200;
   const maxPosts = early ? 3 : 2;
   const maxHost = early ? 3 : 4;
@@ -1907,7 +1961,7 @@ function setupSegues() {
   }
 }
 
-function playIntermission(track) {
+function playIntermission(track, autoplay=true) {
   if (isSendoff(track) || isSendoffIntro(track)) return; // scheduled radio only
   if (isDress(track)) { startDress(track); return; }
   if (isStory(track)) {
@@ -1917,12 +1971,12 @@ function playIntermission(track) {
     if (i >= 0) storiesStarted++;
     lastHostId=track.id; lastStoryBlock=hostBlocks+1;
   }
-  if (sessionMix) { hostBlocks++; hostStreak++; postStreak = 0; }
+  if (sessionMix || postMode==="void") { hostBlocks++; hostStreak++; postStreak = 0; }
   // Only known research passages need a spoken introduction. Station IDs,
   // prayers (which introduce themselves), and asides are left alone.
   const group = Object.hasOwn(passageGroups, track.id) ? passageGroups[track.id] : null;
   const segue = group ? segueBags.get(group)?.() : null;
-  startFramedBreak(track, segue);
+  startFramedBreak(track, segue, autoplay);
 }
 let lastAside = 0;
 let nextAsideAt = 1;
@@ -2150,7 +2204,7 @@ function arrange(after = -1, omitCurrent = false) {
   nextIndex = count ? (after + 1) % count : 0;
   shuffledOrder = [];
   shuffleCursor = 0;
-  if (!shuffled || !count) return;
+  if (postMode!=="on" || !count) return;
 
   for (let i = 0; i < count; i++) {
     if (!omitCurrent || i !== after) shuffledOrder.push(i);
@@ -2165,11 +2219,13 @@ function arrange(after = -1, omitCurrent = false) {
 }
 
 function takePost(autoplay) {
+  if (postMode==="void" && chosenFirst===null) { continueVoid(autoplay); return; }
+  if (!program.posts.length) { pauseVoid("no original posts are available."); return; }
   if (sessionMix) { postStreak++; hostStreak = 0; }
   if (chosenFirst !== null) {
     currentPost = chosenFirst;
     chosenFirst = null;
-  } else if (shuffled) {
+  } else if (postMode==="on") {
     if (shuffleCursor >= shuffledOrder.length) arrange(currentPost);
     currentPost = shuffledOrder[shuffleCursor++];
   } else {
@@ -2262,7 +2318,7 @@ function buildProgram() {
     byId("program").append(nav);
   }
   renderPage();
-  byId("shuffle-option").hidden = program.posts.length < 2;
+  paintPostMode();
   byId("program").hidden = false;
 }
 
@@ -2277,7 +2333,7 @@ function paintControls() {
   byId("state").textContent = playing ? (isAside(current) ? "astra · aside" : (isSegue(current) || isSendoffIntro(current)) ? "astra · segue" : isStory(current) ? "astra · storytelling" : isDress(current) ? "astra · infomercial" : segmentNames[current.kind]) : started ? "paused" : "ready to tune in";
   byId("play-icon").classList.toggle("pause", playing);
   byId("tune-text").textContent = playing ? "pause" : started ? "resume" : "tune in";
-  byId("next").disabled = !started || !program.posts.length;
+  paintPostMode();
   byId("announcement").textContent = byId("state").textContent + " · " + byId("title").textContent;
 }
 
@@ -2299,6 +2355,9 @@ function failed() {
     show(passage, playing);
     return;
   }
+  // Avoid falling back to a blog reading or infinitely cycling through failed
+  // host files when posts are voided. Keep the existing framed recovery above.
+  if (postMode==="void") { pauseVoid("this recording could not play. try again or choose next segment."); return; }
   if (["music", "station_sound", "audio_excerpt", "sendoff_music", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
     const autoplay = playing;
     takePost(autoplay);
@@ -2517,6 +2576,7 @@ function intermissionAfterReading(duration) {
 }
 
 function continueAfterPost() {
+  if (postMode==="void" && chosenFirst===null) { continueVoid(true); return; }
   if (sessionMix) { continueSession(true); return; }
   const {break_every, short_id_every} = program.cadence;
   const intermission = intermissionAfterReading(program.posts[currentPost].body.duration);
@@ -2551,7 +2611,7 @@ function finish() {
   if (isStory(current)) completeStory(current);
   switch (current.kind) {
     case "station_intro":
-      if (program.posts.length) takePost(true);
+      if (program.posts.length || postMode==="void") takePost(true);
       else {
         started = false;
         show(program.opening, false);
@@ -2666,6 +2726,7 @@ async function load() {
     }
     dialsPaint();
     byId("remember-toggle").disabled = false;
+    byId("remember-home-toggle").disabled = false;
     byId("start-over").disabled = false;
     byId("dials-series-reset").disabled = !storyPool.length;
     byId("tune").disabled = false;
@@ -2693,11 +2754,19 @@ byId("tune").addEventListener("click", () => {
     rememberSave(true);
   }
 });
-byId("next").addEventListener("click", () => { if (started && program.posts.length) takePost(playing); });
-byId("shuffle").addEventListener("change", () => {
-  shuffled = byId("shuffle").checked;
-  arrange(chosenFirst ?? currentPost, true);
-  rememberSavePreferences({shuffle:shuffled});
+byId("next").addEventListener("click", () => {
+  if (!started || !program) return;
+  if (postMode==="void") {
+    chosenFirst=null;
+    const autoplay=playing;
+    if (autoplay && !dressFrame && !sendoffFrame && (maybeSendoff() || maybeDress())) return;
+    continueVoid(autoplay);
+  } else if (program.posts.length) takePost(playing);
+});
+byId("shuffle").addEventListener("click", () => {
+  if (!program || !program.posts.length) return;
+  setPostMode(postModes[(postModes.indexOf(postMode)+1)%3]);
+  rememberSavePreferences({postMode,shuffle:postMode==="on"});
   rememberSave(true);
 });
 byId("volume").addEventListener("input", setVolume);
@@ -2779,10 +2848,20 @@ function rememberRead() {
     return value?.version === 1 && typeof value.token === "string" && value.token.length <= 80 ? value : null;
   } catch { return null; }
 }
+let rememberPaintedEnabled = null;
 function rememberPaint() {
-  byId("remember-toggle").setAttribute("aria-pressed", String(!!rememberToken));
-  byId("remember-state").textContent = rememberToken ? " · on" : " · off";
+  const enabled=!!rememberToken;
+  if (!enabled) rememberFavorites.clear();
+  byId("remember-toggle").setAttribute("aria-pressed", String(enabled));
+  byId("remember-state").textContent = enabled ? " · on" : " · off";
+  byId("remember-home-toggle").setAttribute("aria-pressed", String(enabled));
+  byId("remember-home-state").textContent = enabled ? " · on" : " · off";
+  byId("remember-home-help").textContent = enabled ? "saved on this device" : "this visit only";
   dialsPaint();
+  if (rememberPaintedEnabled!==enabled) {
+    rememberPaintedEnabled=enabled;
+    document.dispatchEvent(new Event('radio-preferences-change'));
+  }
 }
 function rememberStatus(text) { byId("remember-status").textContent = text; const other=byId("dials-storage-status"); if(other)other.textContent=text; }
 function rememberWrite(record) {
@@ -2810,7 +2889,10 @@ function rememberPreferences(value) {
     ...dialsPrefs(value?.prefs),
     favorites:rememberFavoriteIds(value?.prefs?.favorites),
     dressPinned:value?.prefs?.dressPinned===true,
-    shuffle:typeof value?.prefs?.shuffle==='boolean' ? value.prefs.shuffle : value?.mark?.shuffled===true};
+    postMode:postModes.includes(value?.prefs?.postMode) ? value.prefs.postMode :
+      (typeof value?.prefs?.shuffle==='boolean' ? value.prefs.shuffle : value?.mark?.shuffled===true) ? "on" : "off",
+    shuffle:postModes.includes(value?.prefs?.postMode) ? value.prefs.postMode==="on" :
+      typeof value?.prefs?.shuffle==='boolean' ? value.prefs.shuffle : value?.mark?.shuffled===true};
 }
 function rememberApplyPreferences(value) {
   const prefs=rememberPreferences(value);
@@ -2818,11 +2900,8 @@ function rememberApplyPreferences(value) {
   if (validSeriesNext(prefs.seriesNext)) { seriesNext=prefs.seriesNext; syncStoryCursor(); }
   let changed=prefs.favorites.length!==rememberFavorites.size || prefs.favorites.some(id=>!rememberFavorites.has(id));
   if (changed) { rememberFavorites.clear(); for (const id of prefs.favorites) rememberFavorites.add(id); }
-  if (shuffled!==prefs.shuffle || byId('shuffle').checked!==prefs.shuffle) {
-    shuffled=prefs.shuffle; byId('shuffle').checked=shuffled;
-    if (program) arrange(chosenFirst ?? currentPost,true);
-    changed=true;
-  }
+  if (postMode!==prefs.postMode) { setPostMode(prefs.postMode); changed=true; }
+  else paintPostMode();
   if (dressPinned!==prefs.dressPinned) { dressPinned=prefs.dressPinned; dressPaint(); changed=true; }
   dialsPaint();
   if (changed) document.dispatchEvent(new Event('radio-preferences-change'));
@@ -2866,9 +2945,9 @@ function rememberSave(force = false, offset = null) {
     id: current.id, source: current.audio_url, savedAt:dialsLastActivity || Date.now(),
     time: Math.floor((offset ?? rememberOffset()) * 10) / 10,
     currentPost: postId(currentPost), lastPost: postId(lastPost), nextPost: postId(nextIndex),
-    chosen: postId(chosenFirst), shuffled,
+    chosen: postId(chosenFirst), postMode, shuffled:postMode==="on",
     shuffleRemaining: shuffledOrder.length <= 2000 ? shuffledOrder.slice(shuffleCursor).map(postId) : null,
-    sessionSeconds, postDebt, postStreak, hostStreak, hostBlocks, completions, lastBreak, lastAnnouncement,
+    sessionSeconds, postDebt, postStreak, hostStreak, hostBlocks, voidLastIdBlock, completions, lastBreak, lastAnnouncement,
     breakNumber, featureNumber, readingSecondsSinceFeature, readingSecondsSinceBreak, mixedSlot, classicSlot,
     lastAside, nextAsideAt, storyCursor, storiesStarted, storyDebt, lastHostId,
     rotation: {cycle:hostCycle, lastGroup:lastHostGroup,
@@ -2900,17 +2979,18 @@ function rememberRestore(mark) {
   if (track && postKinds.has(track.kind)) post = program.posts.findIndex(p => p.body === track || p.intro === track || p.notice === track);
   if (!track || (postKinds.has(track.kind) && post < 0)) {
     // Removed recordings fall back to a still-present post, never an arbitrary URL.
+    if (postMode==="void") return false;
     const fallback = idx(mark.nextPost);
     if (fallback < 0) return false;
     track = program.posts[fallback].intro; post = fallback;
   }
   currentPost = post; lastPost = idx(mark.lastPost);
   if (postKinds.has(track.kind)) lastPost = post;
-  shuffled = rememberPreferences(rememberRead()).shuffle; byId("shuffle").checked = shuffled;
+  postMode = rememberPreferences(rememberRead()).postMode; paintPostMode();
   arrange(post, true);
   if (idx(mark.nextPost) >= 0 && track.id === mark.id) nextIndex = idx(mark.nextPost);
   const chosen = track.id === mark.id ? idx(mark.chosen) : -1; chosenFirst = chosen >= 0 ? chosen : null;
-  if (shuffled && mark.shuffled === true && Array.isArray(mark.shuffleRemaining) && mark.shuffleRemaining.length <= 2000 && track.id === mark.id) {
+  if (postMode==="on" && (mark.postMode==="on" || (!mark.postMode && mark.shuffled === true)) && Array.isArray(mark.shuffleRemaining) && mark.shuffleRemaining.length <= 2000 && track.id === mark.id) {
     shuffledOrder = [...new Set(mark.shuffleRemaining.map(idx).filter(i=>i>=0))]; shuffleCursor = 0;
   }
   sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,-120,120);
@@ -2930,6 +3010,7 @@ function rememberRestore(mark) {
   // Legacy/explicit fashion recording restored without its frame still gets a safe exit.
   if (isDress(track)&&!dressFrame) { dressFrame={intro:null,speech:track,outro:program.dressSounds.get("station-sound-dress-outro")||null,resume:"boundary"}; dressNextAt=Math.max(dressNextAt,sessionSeconds+1440); }
   postStreak=integer(mark.postStreak); hostStreak=integer(mark.hostStreak); hostBlocks=integer(mark.hostBlocks);
+  voidLastIdBlock=Number.isFinite(mark.voidLastIdBlock) ? Math.min(hostBlocks,integer(mark.voidLastIdBlock)) : hostBlocks;
   completions=integer(mark.completions); lastBreak=Math.min(completions,integer(mark.lastBreak)); lastAnnouncement=Math.min(completions,integer(mark.lastAnnouncement));
   breakNumber=integer(mark.breakNumber); featureNumber=integer(mark.featureNumber);
   readingSecondsSinceFeature=num(mark.readingSecondsSinceFeature); readingSecondsSinceBreak=num(mark.readingSecondsSinceBreak);
@@ -3010,7 +3091,7 @@ function startOver() {
   chosenFirst = null;
   completions = lastBreak = lastAnnouncement = breakNumber = featureNumber = 0;
   readingSecondsSinceFeature = readingSecondsSinceBreak = mixedSlot = classicSlot = 0;
-  sessionSeconds = accountedSeconds = postDebt = postStreak = hostStreak = hostBlocks = 0;
+  sessionSeconds = accountedSeconds = postDebt = postStreak = hostStreak = hostBlocks = voidLastIdBlock = 0;
   hostCycle = []; hostGroups.clear(); lastHostId = lastHostGroup = null;
   lastStoryBlock = -3; nextSessionAsideAt = 2; lastSessionAsideSeconds = -Infinity;
   storiesStarted = storyDebt = 0; syncStoryCursor();
@@ -3039,9 +3120,11 @@ function rememberInit() {
     if (value) {
       const prefs=rememberPreferences(value);
       if (!Array.isArray(value.prefs?.favorites)) prefs.favorites=rememberFavoriteIds(rememberLegacy(legacyFavoriteKey,[]));
-      if (typeof value.prefs?.shuffle!=='boolean' && !value.mark) prefs.shuffle=rememberLegacy(legacyShuffleKey,false)===true;
+      if (!postModes.includes(value.prefs?.postMode) && typeof value.prefs?.shuffle!=='boolean' && !value.mark) {
+        prefs.shuffle=rememberLegacy(legacyShuffleKey,false)===true; prefs.postMode=prefs.shuffle?"on":"off";
+      }
       rememberApplyPreferences({...value,prefs});
-      if (!value.prefs || typeof value.prefs.shuffle!=='boolean' || !Array.isArray(value.prefs.favorites))
+      if (!value.prefs || !postModes.includes(value.prefs.postMode) || typeof value.prefs.shuffle!=='boolean' || !Array.isArray(value.prefs.favorites))
         rememberWrite({...value,prefs});
     }
     rememberClearLegacy();
@@ -3082,18 +3165,20 @@ function rememberInit() {
     resetDialog.close();
     if (action) action();
   });
-  byId("remember-toggle").addEventListener("click",()=>{
+  const toggleRemember=()=>{
     rememberStatus("");
     const record=rememberConsentRecord();
     if (record) {
-      confirmRadioAction("forget?", "this will remove your saved playback bookmark, schedule settings, series progress, favorites, shuffle preference and pinned dress catalogue. current-visit preferences may still be used.", ()=>{
+      confirmRadioAction("forget?", "this will remove your saved playback bookmark, schedule settings, series progress, favorites, blog post mode and pinned dress catalogue. your hearts will be disabled and favorites cleared. other current-visit preferences may still be used.", ()=>{
         // An older confirmation must not delete consent newly granted in another tab.
         if (rememberConsentRecord()?.token!==record.token) return;
         try { rememberClearLegacy(); localStorage.removeItem(rememberKey); rememberToken=null; rememberPaint(); }
         catch { rememberStatus("your device could not delete the saved radio preferences."); }
       });
     } else rememberRequestConsent();
-  });
+  };
+  byId("remember-toggle").addEventListener("click",toggleRemember);
+  byId("remember-home-toggle").addEventListener("click",toggleRemember);
   const close=()=>{if (dialog.close) dialog.close(); else dialog.removeAttribute("open");};
   byId("remember-no").addEventListener("click",close);
   byId("remember-ok").addEventListener("click",()=>{
@@ -3101,7 +3186,7 @@ function rememberInit() {
     try {
       const token=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
       rememberClearLegacy();
-      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],shuffle:shuffled,dressPinned,seriesNext,scheduleMode:dialsMode,idleHours:dialsIdle,maxHours:dialsMax}});
+      rememberWrite({version:1,token,mark:null,prefs:{favorites:[...rememberFavorites],postMode,shuffle:postMode==="on",dressPinned,seriesNext,scheduleMode:dialsMode,idleHours:dialsIdle,maxHours:dialsMax}});
       rememberToken=token; rememberPaint(); rememberSave(true);
     } catch { rememberToken=null; rememberPaint(); rememberStatus("local storage is unavailable on this device."); }
   });
@@ -3109,8 +3194,8 @@ function rememberInit() {
     if (event.key!==rememberKey && event.key!==null) return;
     const value=rememberRead();
     rememberToken=value?.token ?? null; rememberPaint();
-    // Opting out in another tab stops storage immediately. Current-session
-    // favorites/shuffle may still be used; they will not survive a reload.
+    // Opting out in another tab clears favorites and stops storage immediately.
+    // Current-session post mode and other non-favorite preferences may still be used.
     if (value) rememberApplyPreferences(value);
   });
   audio.addEventListener("loadedmetadata",rememberApplySeek);

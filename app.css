@@ -1,28 +1,28 @@
 /* Standalone iPhone-first layout; the regular station stylesheet is unchanged. */
 :root {--bg:#110d1b;--ink:#f5f1fa;--signal:#d5b8ee;--focus:#f0d8ff;--line:#3c304d;--control:#8e72ac;--muted:#b3a5c2;--surface:#20172d;--accent:#c3a2ea;}
 html {font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;}
-body.astra-app {min-height:100dvh;background:radial-gradient(ellipse at 50% 8%,#291b3e 0,var(--bg) 52%);padding:env(safe-area-inset-top,0) 0 calc(88px + env(safe-area-inset-bottom,0));line-height:1.45;}
-.app-header,.app-main {width:min(100% - 40px,480px);margin:auto;}
-.app-header {display:flex;justify-content:space-between;align-items:center;padding:19px 0 15px;gap:16px;}
+body.astra-app {min-height:100dvh;background:radial-gradient(ellipse at 50% 8%,#291b3e 0,var(--bg) 52%);padding:env(safe-area-inset-top,0) 0 calc(70px + env(safe-area-inset-bottom,0));line-height:1.45;}
+.app-header,.app-main {width:min(100% - 32px,480px);margin:auto;}
+.app-header {display:flex;justify-content:space-between;align-items:center;padding:8px 0 7px;gap:12px;}
 .eyebrow {font-size:.68rem;letter-spacing:.14em;color:var(--muted);text-transform:none;display:block;margin-bottom:4px;}
 .app-header h1 {font-size:1.16rem;font-weight:650;letter-spacing:-.035em;}
 .round {border:1px solid var(--line);background:#261b35;border-radius:50%;width:44px;height:44px;color:var(--signal);font-size:1.4rem;display:grid;place-content:center;flex:none;}
-.art {margin:3px auto 20px;width:min(100%,330px);border-radius:26px;overflow:hidden;background:radial-gradient(ellipse,#42275a,#1b1429);box-shadow:0 16px 44px #07040d70;}
+.art {margin:2px auto 10px;width:min(100%,290px,33vh);width:min(100%,290px,33dvh);border-radius:22px;overflow:hidden;background:radial-gradient(ellipse,#42275a,#1b1429);box-shadow:0 16px 44px #07040d70;}
 .art img {display:block;width:100%;height:auto;}
 .now-top {display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .state {margin:0;font-size:.72rem;letter-spacing:.065em;text-transform:none;}
 .state::before {border-radius:50%;}
 .favorite {border:0;background:transparent;font-size:1.85rem;}
 .favorite[aria-pressed=true] {color:#e99edc;}
-.now h2 {font-size:clamp(1.4rem,6vw,1.85rem);line-height:1.18;letter-spacing:-.035em;overflow-wrap:anywhere;}
-#details {margin-top:7px;color:var(--muted);font-size:.85rem;}
-#original {font-size:.77rem;padding:7px 0 3px;}
-.transport {margin:19px 0 12px;}
+.now h2 {font-size:clamp(1.25rem,5.1vw,1.7rem);line-height:1.18;letter-spacing:-.035em;overflow-wrap:anywhere;}
+#details {margin-top:4px;color:var(--muted);font-size:.85rem;}
+#original {font-size:.77rem;padding:4px 0 2px;}
+.transport {margin:10px 0 6px;}
 .track-time {justify-content:space-between;font-size:.73rem;}
 .track-time .meter {display:none;}
-#seek {width:100%;height:30px;margin:0;accent-color:var(--accent);}
-.app-transport {display:flex;align-items:center;justify-content:center;gap:26px;margin:7px 0 14px;}
-.app-play {height:64px;min-width:122px;border:none;border-radius:36px;background:var(--accent);color:#21142f;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 19px;font-size:.9rem;font-weight:750;}
+#seek {width:100%;height:28px;margin:0;accent-color:var(--accent);}
+.app-transport {display:grid;grid-template-columns:44px minmax(0,1fr) 44px 74px;align-items:center;gap:8px;max-width:360px;margin:4px auto 6px;}
+.app-play {height:52px;min-width:0;border:none;border-radius:36px;background:var(--accent);color:#21142f;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 8px;font-size:.86rem;font-weight:750;}
 .app-play .play-icon {color:#21142f;}
 .skip {border:0;background:transparent;position:relative;font-size:1.65rem;}
 .skip small {position:absolute;font-size:.6rem;left:0;right:0;bottom:4px;text-align:center;}
@@ -30,10 +30,10 @@ button:disabled {opacity:.45;}
 .radio-actions {display:flex;gap:9px;margin:15px 0 16px;}
 .chip,.filters button,.sleep-options button {flex:1;min-height:44px;border:1px solid var(--line);background:var(--surface);border-radius:16px;color:var(--signal);font-weight:550;font-size:.82rem;}
 .chip[aria-pressed=true],.filters button[aria-pressed=true] {border-color:var(--accent);background:#38264f;}
-.transcript {margin-top:8px;}.transcript summary {font-size:.87rem;}.transcript p {color:var(--ink);font-size:.91rem;}
-.fineprint {color:var(--muted);font-size:.73rem;line-height:1.5;margin:12px 0;}
-.app-tabs {position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:9px 10px calc(9px + env(safe-area-inset-bottom,0));background:#171121f5;border-top:1px solid var(--line);z-index:5;backdrop-filter:blur(12px);}
-.app-tabs button {width:min(25%,120px);border:0;background:transparent;color:var(--muted);font-size:.71rem;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
+.transcript {margin-top:4px;}.transcript summary {font-size:.87rem;}.transcript p {color:var(--ink);font-size:.91rem;}
+.fineprint {color:var(--muted);font-size:.73rem;line-height:1.5;margin:8px 0;}
+.app-tabs {position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:5px 8px calc(5px + env(safe-area-inset-bottom,0));background:#171121f5;border-top:1px solid var(--line);z-index:5;backdrop-filter:blur(12px);}
+.app-tabs button {width:min(25%,120px);border:0;background:transparent;color:var(--muted);font-size:.71rem;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
 .app-tabs button span {font-size:1.4rem;line-height:1.15;}.app-tabs button[aria-current] {color:var(--accent);font-weight:700;}
 .section-heading {margin:12px 0 22px;}.section-heading h2 {font-size:2rem;letter-spacing:-.04em;margin-bottom:8px;}.section-heading p {font-size:.93rem;color:var(--muted);}
 #search-library {width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;color:var(--ink);padding:12px;min-height:46px;font:inherit;}
@@ -41,7 +41,7 @@ button:disabled {opacity:.45;}
 .library-list {list-style:none;padding:0;margin:0;}.library-list li {display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:8px 0;}.library-list .entry {flex:1;min-width:0;text-align:left;border:0;background:none;color:var(--ink);font:inherit;min-height:48px;padding:4px 0;overflow-wrap:anywhere;}.entry small {display:block;font-size:.73rem;color:var(--muted);margin-top:4px;}.library-list .round {border:0;background:none;}
 #view-about > p {margin:14px 0;}.policy-links {font-size:.76rem;margin-top:20px;}.policy-links ul {gap:7px 12px;}.policy-links li+li::before {display:none;}
 dialog {width:min(92vw,430px);border:1px solid var(--line);border-radius:24px;padding:22px;background:#21172e;color:var(--ink);}.dialog-head {display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;}.dialog-head h2 {font-size:1.3rem;}dialog::backdrop {background:#08050bbb;}.sleep-options {display:flex;flex-wrap:wrap;gap:8px;margin:17px 0;}.sleep-options button {flex:1 0 28%;}
-@media(max-width:360px){.app-header,.app-main{width:calc(100% - 26px)}.art{max-width:270px}.app-transport{gap:16px}}
+@media(max-width:360px){.app-header,.app-main{width:calc(100% - 26px)}.art{max-width:260px}.app-transport{gap:5px;grid-template-columns:44px minmax(0,1fr) 44px 72px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
 /* App viewport gestures: allow panning, not double-tap or pinch zoom. */
@@ -67,3 +67,26 @@ html, body.astra-app, body.astra-app * {touch-action:pan-x pan-y;}
 @media(max-width:360px){.app-tabs {padding-left:2px;padding-right:2px;}.app-tabs button {font-size:.65rem;}}
 
 .app-tabs .dial-icon {display:block;width:22px;height:22px;margin:auto;}
+
+/* Radio home: immediate playback controls; sleep and schedule remain in dials. */
+#view-radio .transport-shuffle {min-width:44px;min-height:44px;padding:3px 2px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:.69rem;line-height:1.15;}
+#view-radio .transport-shuffle span {text-align:center;}
+#view-radio .transport-shuffle[data-mode="on"] {background:#38264f;border-color:var(--accent);color:var(--signal);font-weight:700;}
+#view-radio .transport-shuffle:disabled {opacity:.45;}
+#view-radio .dress-catalogue > .dress-tools {margin:4px 0 8px;gap:5px;}
+#view-radio .dress-tools button {flex:1 1 auto;padding:5px 8px;font-size:.75rem;}
+/* Only the inline reader: limit its height and let vertical gestures chain to the page. */
+#view-radio #dress-inline-reader {max-height:min(25vh,220px);max-height:min(25dvh,220px);overflow-y:auto;overscroll-behavior-y:auto;margin:4px 0 10px;padding:0 8px 0 2px;border-block:1px solid var(--line);}
+#view-radio #dress-inline-reader:focus-visible {outline-offset:2px;}
+@media (max-height:680px) and (orientation:portrait) {
+  .art {width:min(100%,260px,28vh);width:min(100%,260px,28dvh);}
+  .app-header {padding-block:5px;}
+}
+
+#view-radio .transport-shuffle[data-mode="void"] {background:#38264f;border-color:var(--accent);color:var(--signal);font-weight:700;}
+#view-radio .transport-shuffle[data-mode="void"] .shuffle-icon {opacity:.45;}
+
+.astra-app .home-memory {justify-content:center;gap:8px;margin:2px 0 6px;color:var(--muted);}
+.astra-app #remember-home-toggle {border-radius:12px;background:var(--surface);}
+.astra-app .favorite:disabled {color:#a6a0b0;opacity:.55;cursor:default;}
+.astra-app.memory-off .app-tabs button[data-view="favorites"] span {color:#a6a0b0;opacity:.55;}

@@ -51,13 +51,14 @@
               <span aria-hidden="true" id="play-icon" class="play-icon"></span><span id="tune-text">tune in</span>
             </button>
             <button id="next" class="secondary" type="button" disabled>
-              <span aria-hidden="true" class="next-icon"></span>next post
+              <span aria-hidden="true" class="next-icon"></span><span class="next-label">next post</span>
             </button>
+            <button id="shuffle" class="transport-shuffle" type="button" data-mode="off" aria-label="shuffle off · nudisco ai blog posts in catalogue order · next: shuffle on" title="nudisco ai blog posts in catalogue order. activate to cycle post mode." disabled><svg class="shuffle-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h3c5 0 7 12 12 12h3m-4-4 4 4-4 4M3 18h3c1.8 0 3.2-1.5 4.4-3.6M13.6 9.6C15 7.4 16.4 6 18 6h3m-4-4 4 4-4 4"/></svg><span class="post-mode-label">shuffle off</span></button>
             <label class="volume"><span>volume</span>
               <input id="volume" type="range" min="0" max="100" step="1" value="80">
             </label>
           </div>
-          
+          <div class="home-memory"><button id="remember-home-toggle" type="button" aria-pressed="false" aria-describedby="remember-home-help" disabled>remember me<span id="remember-home-state"> · off</span></button><span id="remember-home-help">this visit only</span></div>
           <p id="error" role="alert" hidden></p><p id="remember-status" role="status"></p>
         </div>
       </div>
@@ -121,10 +122,10 @@
 <section class="dials-group"><h3>broadcast schedule</h3><label for="dials-mode">when you return</label><select id="dials-mode"><option value="automatic">automatic restart</option><option value="fresh">always start fresh</option><option value="resume">resume previous schedule</option></select><p id="dials-mode-help">restart a stale schedule without losing your place in the series.</p>
 <details id="dials-timing"><summary>automatic timing</summary><label for="dials-idle">restart after time away</label><select id="dials-idle"><option value="1">1 hour</option><option value="2">2 hours</option><option value="4">4 hours</option><option value="8">8 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select><label for="dials-max">maximum saved listening time</label><select id="dials-max"><option value="4">4 hours</option><option value="8">8 hours</option><option value="12">12 hours</option><option value="24">24 hours</option><option value="48">48 hours</option></select><p>checked when returning or resuming after a long pause, never during continuous playback.</p></details><button id="start-over" type="button" disabled>restart radio schedule</button><p>keeps your series progress, favorites and pins.</p></section>
 <section class="dials-group"><h3>through the mirror</h3><p id="dials-series" role="status">finding the series…</p><button id="dials-series-reset" type="button" disabled>reset series progress</button><p>unfinished episodes stay next in the sequence.</p></section>
-<section class="dials-group"><h3>playback</h3><label id="shuffle-option" hidden><input id="shuffle" type="checkbox"> shuffle posts</label></section>
+
 <section class="dials-group" id="dials-pins" hidden><h3>pinned catalogue</h3><p>art of the dress</p><button id="dials-unpin" type="button">unpin catalogue</button></section>
 <p id="dials-storage-status" role="status"></p><p id="dials-result" role="status"></p></div></dialog>
-<dialog id="remember-dialog" aria-labelledby="remember-heading"><h2 id="remember-heading">remember me</h2><p>this feature uses local storage to save your broadcast bookmark, schedule settings, series progress, favorites, shuffle preference and pinned dress catalogue. these stay in this browser and are not sent to our servers.</p><p class="remember-note">(if enabled, your saved playback bookmark, schedule settings, series progress, favorites, shuffle preference and pinned dress catalogue will be deleted upon disabling this feature. clearing browser data may also remove them. what the rest of the internet does is beyond us, friend.)</p><div class="remember-choices"><button id="remember-no" type="button" autofocus>no—nonono NO!</button><button id="remember-ok" type="button">ok</button></div></dialog>
+<dialog id="remember-dialog" aria-labelledby="remember-heading"><h2 id="remember-heading">remember me</h2><p>this feature uses local storage to save your broadcast bookmark, schedule settings, series progress, favorites, blog post mode and pinned dress catalogue. these stay in this browser and are not sent to our servers.</p><p class="remember-note">(if enabled, your saved playback bookmark, schedule settings, series progress, favorites, blog post mode and pinned dress catalogue will be deleted upon disabling this feature. clearing browser data may also remove them. what the rest of the internet does is beyond us, friend.)</p><div class="remember-choices"><button id="remember-no" type="button" autofocus>no—nonono NO!</button><button id="remember-ok" type="button">ok</button></div></dialog>
 <dialog id="start-over-dialog" aria-labelledby="start-over-heading" aria-describedby="start-over-description"><h2 id="start-over-heading">start over?</h2><p id="start-over-description">this will return you to the beginning of the radio and replace your saved playback bookmark, if enabled.</p><div class="remember-choices"><button id="start-over-no" type="button" autofocus>no</button><button id="start-over-ok" type="button">yes</button></div></dialog>
 </body>
 </html>

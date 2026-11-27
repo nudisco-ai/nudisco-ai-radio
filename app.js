@@ -37,11 +37,11 @@
     window.scrollTo(0,0);
   }
   function toggleFavorite(id) {
-    if (!lookup.has(id)) return;
-    const adding = !favorites.has(id);
-    if (adding) favorites.add(id); else favorites.delete(id);
-    if (rememberConsentRecord()) rememberSavePreferences({favorites:[...favorites]});
-    else if (adding) rememberRequestConsent();
+    if (!lookup.has(id) || !rememberConsentRecord()) return;
+    const next = new Set(favorites);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    if (!rememberSavePreferences({favorites:[...next]})) return;
+    favorites.clear(); for (const favorite of next) favorites.add(favorite);
     update();
     if (view !== 'radio') renderLists();
   }
@@ -55,14 +55,22 @@
       playIntermission(item.track);
     }
   }
+  function paintHeart(heart,item) {
+    const enabled=!!rememberToken;
+    const active=Boolean(enabled && item && favorites.has(item.id));
+    heart.disabled=!enabled || !item;
+    heart.textContent=active?'♥':'♡';
+    heart.setAttribute('aria-pressed',String(active));
+    const label=!enabled?'favorites unavailable: remember me is off':!item?'no recording to save':(active?'remove favorite: ':'save favorite: ')+item.title;
+    heart.setAttribute('aria-label',label); heart.title=label;
+  }
   function row(item) {
     const li = document.createElement('li');
     const b = document.createElement('button'); b.type = 'button'; b.className = 'entry'; b.textContent = item.title;
     const small = document.createElement('small'); small.textContent = item.subtitle; b.append(small);
     b.addEventListener('click', () => select(item));
     const heart = document.createElement('button'); heart.type = 'button'; heart.className = 'round favorite';
-    const active = favorites.has(item.id); heart.textContent = active ? '♥' : '♡'; heart.setAttribute('aria-pressed', String(active));
-    heart.setAttribute('aria-label', (active ? 'remove favorite: ' : 'save favorite: ') + item.title);
+    paintHeart(heart,item);
     heart.addEventListener('click', () => toggleFavorite(item.id)); li.append(b, heart); return li;
   }
   function renderLists() {
@@ -71,7 +79,7 @@
     const found = items.filter(i => (filter === 'all' || i.type === filter) && (!query || (i.title + ' ' + i.subtitle + ' ' + i.collection).toLocaleLowerCase().includes(query)));
     $('library-count').textContent = found.length + (found.length === 1 ? ' recording' : ' recordings');
     // Build only visible/open collections; closed groups do not allocate hundreds of rows.
-    const signature = JSON.stringify([filter,query,[...favorites]]);
+    const signature = JSON.stringify([filter,query,!!rememberToken,[...favorites]]);
     if (librarySignature !== signature) {
       librarySignature = signature;
       const grouped = new Map();
@@ -92,15 +100,16 @@
       }
       $('library-list').replaceChildren(fragment);
     }
-    const collection = items.filter(i => favorites.has(i.id));
-    if (view === 'favorites') $('favorites-list').replaceChildren(...collection.map(row)); $('favorites-empty').hidden = Boolean(collection.length);
+    const collection = rememberToken ? items.filter(i => favorites.has(i.id)) : [];
+    // Clear a previously rendered favorites list even when its tab is not active.
+    if (view === 'favorites' || !rememberToken) $('favorites-list').replaceChildren(...collection.map(row));
+    $('favorites-empty').hidden = !rememberToken || Boolean(collection.length);
   }
   function initLibrary() {
     if (initialized || !program) return;
     const postItems = program.posts.map((p, index) => ({id:p.body.id, title:p.title, subtitle:'post · ' + (shortDate(p.body.date) || 'undated') + ' · ' + clock(p.intro.duration + p.body.duration),type:'post',collection:'posts',index}));
     const features = [...program.breaks, ...program.features].filter(t => !isSendoff(t) && !isSendoffIntro(t) && ['intermission','feature_intermission'].includes(t.kind)).map(track => ({id:track.id,title:typeof track.title === 'string' && track.title ? stationDisplayTitle(track) : 'astra',subtitle:'astra · '+clock(track.duration),type:'astra',collection:collectionFor(track),track}));
     items = [...postItems,...features]; lookup = new Map(items.map(i => [i.id,i])); initialized = true;
-    $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));
     renderLists();
   }
   function sleepCheck() {
@@ -132,9 +141,11 @@
   }
   function update() {
     initLibrary();
-    $('shuffle-toggle').setAttribute('aria-pressed', String($('shuffle').checked));
     const item=currentItem(); const btn=$('favorite-now');
-    btn.disabled=!item; const active=Boolean(item && favorites.has(item.id)); btn.textContent=active?'♥':'♡'; btn.setAttribute('aria-pressed',String(active));
+    paintHeart(btn,item);
+    $('library-memory-note').hidden=!!rememberToken;
+    $('favorites-memory-note').textContent=rememberToken?'saved on this device. removing a heart removes that favorite.':'favorites are available when remember me is on. you can find it on the radio home screen.';
+    document.body.classList.toggle('memory-off',!rememberToken);
     const seek=$('seek'); const available=validDuration(); seek.disabled=!available; $('back15').disabled=!available;
     if (available) {seek.max=String(audio.duration); if (!seek.matches(':active')) seek.value=String(audio.currentTime);}
     else {seek.max='1'; seek.value='0';}
@@ -148,8 +159,7 @@
   $('favorite-now').addEventListener('click',()=>{const i=currentItem();if(i)toggleFavorite(i.id);});
   $('back15').addEventListener('click',()=>{if(validDuration())audio.currentTime=Math.max(0,audio.currentTime-15);});
   $('seek').addEventListener('input',()=>{if(validDuration())audio.currentTime=Math.min(audio.duration,Number($('seek').value));});
-  $('shuffle-toggle').addEventListener('click',()=>{if(!program)return;const c=$('shuffle');c.checked=!c.checked;c.dispatchEvent(new Event('change'));$('shuffle-toggle').setAttribute('aria-pressed',String(c.checked));});
-  document.addEventListener('radio-preferences-change',()=>{update();if(view!=='radio')renderLists();});
+  document.addEventListener('radio-preferences-change',()=>{update();renderLists();});
   const openDialog=id=>{const d=$(id);if(d.showModal)d.showModal();else d.setAttribute('open','');};
   const closeDialog=id=>{const d=$(id);if(d.close)d.close();else d.removeAttribute('open');};
   $('sleep-open').addEventListener('click',()=>openDialog('sleep-dialog'));$('install-help').addEventListener('click',()=>openDialog('install-dialog'));
