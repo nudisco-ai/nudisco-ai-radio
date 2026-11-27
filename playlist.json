@@ -28,6 +28,52 @@
       "title": "station introduction"
     },
     {
+      "announcement_text": "the next post is SURPRISE!! it includes an attachment.",
+      "attachments": [
+        {
+          "kind": "label",
+          "value": "Flutterpie Friday Fluttershy Friday GIF - Flutterpie friday Fluttershy friday Pinkie pie friday"
+        }
+      ],
+      "audio_sha256": "1562f738845d5c8e9588c4f139a59715e7610ea2d1137d6d4dd9bcb93a3e943e",
+      "audio_url": "audio/0f3e5ada7d8b9c5f3d6c207ca4f645cc0f4d2d8041e1372c9231e64d0f1a29c9.mp3",
+      "content_hash": "cc179958c2203753b7a7382a67cde0c8c2d5325d693f4d1b18a54ae383070880",
+      "date": "2026-11-27T04:42:44-08:00",
+      "difficult_attachment": false,
+      "duration": 4.2863,
+      "edition": "regular",
+      "has_title": true,
+      "id": "intro:20261127-044244-surprise-25be",
+      "kind": "post_intro",
+      "post_id": "20261127-044244-surprise-25be",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261127-044244-surprise-25be",
+      "speed": 1.5,
+      "title": "SURPRISE!!"
+    },
+    {
+      "attachments": [
+        {
+          "kind": "label",
+          "value": "Flutterpie Friday Fluttershy Friday GIF - Flutterpie friday Fluttershy friday Pinkie pie friday"
+        }
+      ],
+      "audio_sha256": "b2446635a5f2c18d0f036a5e4a54f373875a37b91b74e747bd8230135ec11aa5",
+      "audio_url": "audio/7fd094ac038400b0ff07a8c7203948542927348974d6b4429371923947f3824b.mp3",
+      "authored_text": "pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony pink pony kind pony pink pony",
+      "content_hash": "be8e974e90e6adb58116c5a027e88f1e029401d4eca0e89b2d534250efe05264",
+      "date": "2026-11-27T04:42:44-08:00",
+      "difficult_attachment": false,
+      "duration": 18.6753,
+      "edition": "regular",
+      "has_title": true,
+      "id": "post:20261127-044244-surprise-25be",
+      "kind": "post",
+      "post_id": "20261127-044244-surprise-25be",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261127-044244-surprise-25be",
+      "speed": 1.5,
+      "title": "SURPRISE!!"
+    },
+    {
       "announcement_text": "next, we have a post titled happy.",
       "attachments": [],
       "audio_sha256": "a89bfdf55be20dd5e48f9ce67c253890c73785d00ae78579b1b8bb218ff58373",
