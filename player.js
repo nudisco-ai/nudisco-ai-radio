@@ -3013,6 +3013,8 @@ function show(track, autoplay) {
   current = track;
   audio.pause();
   audio.src = track.audio_url;
+  // Restore the listener’s normal volume on every other track.
+  setVolume();
   const isPost = track.kind === "post_intro" || track.kind === "post" || track.kind === "attachment_notice";
   readout(isPost ? program.posts[currentPost] : null);
   message("");
@@ -3135,7 +3137,9 @@ function finish() {
 
 function setVolume() {
   const input = byId("volume");
-  const wanted = Number(input.value) / 100;
+  if (!input) return; // Some devices replace the slider with a device-volume label.
+  // A small playback-only trim: keep the approved song bytes and duration unchanged.
+  const wanted = Number(input.value) / 100 * (isSendoff(current) ? Math.pow(10, -1.2 / 20) : 1);
   try { audio.volume = wanted; } catch { /* the device may own the volume */ }
   if (Math.abs(audio.volume - wanted) > .01) {
     const label = input.closest("label");
