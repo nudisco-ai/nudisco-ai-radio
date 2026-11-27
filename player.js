@@ -207,6 +207,106 @@ const expansionIntroPalette = [
     "sha": "66fd3ede970e1a12214ee5cec5079c3fb0cff23e9b6fec76547c17aa7cf606d6"
   }
 ];
+const auditionSoundPalette = [
+  {
+    "id": "station-sound-violet-reverie",
+    "title": "violet reverie",
+    "duration": 5.4,
+    "sha": "348eaf9bfcabbb6074ea46af9cfa934a9fb3c9f6ac1bca42fef1d312fa3481a3"
+  },
+  {
+    "id": "station-sound-crystal-snowfall",
+    "title": "crystal snowfall",
+    "duration": 5.8,
+    "sha": "8ef5eedff53315413d324d395b45c35fc8d47864295c8e05af653e2292fc451d"
+  },
+  {
+    "id": "station-sound-velvet-curtain",
+    "title": "velvet curtain",
+    "duration": 5.4,
+    "sha": "a2b6e41174ea752c5c3eb66c6a4c427627ec27e2df4c80588767405ce1886743"
+  },
+  {
+    "id": "station-sound-silver-flourish",
+    "title": "silver flourish",
+    "duration": 5.8,
+    "sha": "1f43ac51825fe37a4628d911a00a54b1770fb2153107a685f4fea8d7c985f8fd"
+  },
+  {
+    "id": "station-sound-moonlit-pages",
+    "title": "moonlit pages",
+    "duration": 6.2,
+    "sha": "04a605523f140390f5544333d4024c7024c5bb4342459705ae6990f3357b25bc"
+  },
+  {
+    "id": "station-sound-everfree-twilight",
+    "title": "everfree twilight",
+    "duration": 6.6,
+    "sha": "23ee9aebb8e973eed8db5685a75728e02335d8faa399dd3869919dd2347639f7"
+  },
+  {
+    "id": "station-sound-echoes-of-antiquity",
+    "title": "echoes of antiquity",
+    "duration": 6.4,
+    "sha": "53861c0c854bc1d5736375e92eb6bd44e98e8235a59ac09325f9a54f206fc245"
+  },
+  {
+    "id": "station-sound-fourth-dimensional-signal",
+    "title": "fourth dimensional signal",
+    "duration": 6.4,
+    "sha": "8b5d7723561190befd1fd75d5fd4683d6ead0e7db8cfa1fbe22428a6866de834"
+  }
+];
+const auditionIntroPalette = [
+  {
+    "id": "station-sound-violet-reverie-intro",
+    "title": "violet reverie intro",
+    "duration": 3.35,
+    "sha": "db1360def48f7e345799883cfddfd59f00d1e421049c2484eada000563af83d5"
+  },
+  {
+    "id": "station-sound-crystal-snowfall-intro",
+    "title": "crystal snowfall intro",
+    "duration": 3.6,
+    "sha": "62819aaafab71ebcb5a427f77173aaf4430d9efe161784c0e0669bcac9e08e17"
+  },
+  {
+    "id": "station-sound-velvet-curtain-intro",
+    "title": "velvet curtain intro",
+    "duration": 3.35,
+    "sha": "89cac83b43b25ff8469bf91939e93c222100bd56dbafaccdde01a38812b089ca"
+  },
+  {
+    "id": "station-sound-silver-flourish-intro",
+    "title": "silver flourish intro",
+    "duration": 3.6,
+    "sha": "2e1ffa84222d717b9fc376d80446f231e7c8e5fd7fe8965335cc369038731879"
+  },
+  {
+    "id": "station-sound-moonlit-pages-intro",
+    "title": "moonlit pages intro",
+    "duration": 3.84,
+    "sha": "1b2907d5a24a83c1d9ee0fa0e3a05f73127d0a9944992891cf022a8aaec40036"
+  },
+  {
+    "id": "station-sound-everfree-twilight-intro",
+    "title": "everfree twilight intro",
+    "duration": 4.09,
+    "sha": "37eb9b7f525d8a71174c676b32e71f96d0a87279536f5f6fbca7b5c3df1ba104"
+  },
+  {
+    "id": "station-sound-echoes-of-antiquity-intro",
+    "title": "echoes of antiquity intro",
+    "duration": 3.97,
+    "sha": "c2143abd2f671d3f1fc7b8e50aaa854110646e466ac88cc195019dde0a4a12b6"
+  },
+  {
+    "id": "station-sound-fourth-dimensional-signal-intro",
+    "title": "fourth dimensional signal intro",
+    "duration": 3.97,
+    "sha": "33248e66ea439b83ff21f6cdedb12f43449456af1384cd7ed79a3d8df2fc847a"
+  }
+];
 // Editorial sound cues: known passages, not a rotating sound lottery.
 // Default to the familiar lofi theme; custom paired recordings take precedence.
 const editorialSoundCues = {
@@ -1320,17 +1420,36 @@ function soundChoices(track) {
   if (group === "arcana" || group === "equestria") return ["quiet-transition"];
   return []; // unknown or separately authored material keeps the station theme
 }
+// Only these established reading families gain the approved alternatives.
+const auditionChoices = Object.freeze({
+  glimmer:["violet-reverie", "crystal-snowfall"],
+  magnificence:["velvet-curtain", "silver-flourish"],
+  "chronicles-wisdom":["moonlit-pages"],
+  "chronicles-history":["echoes-of-antiquity"],
+  arcana:["moonlit-pages"],
+  equestria:["everfree-twilight"],
+  observatory:["fourth-dimensional-signal"],
+  harmony:["fourth-dimensional-signal"]
+});
+function contextualSoundChoices(track, station) {
+  const base = soundChoices(track);
+  const alternatives = auditionChoices[hostGroup(track)] || [];
+  if (!alternatives.length || !station.auditionSounds?.length) return base;
+  const present = alternatives.filter(name => station.auditionSounds.some(t=>t.id === "station-sound-" + name));
+  // Equal chance among available contextual identities, old and new.
+  return present.length ? shuffledCopy([...new Set([...base, ...present])]) : base;
+}
 function soundAfterSpeech(track, station) {
   if (track.excerpt_id) return station.excerpts.get(track.excerpt_id);
   const theme = station.music;
   if (!theme || !["intermission", "feature_intermission"].includes(track.kind) || isAside(track) || isSegue(track)) return theme;
-  const available = [...(station.sounds || []), ...(station.solfeggioSounds || []), ...(station.expansionSounds || [])];
+  const available = [...(station.sounds || []), ...(station.solfeggioSounds || []), ...(station.expansionSounds || []), ...(station.auditionSounds || [])];
   if (!available.length) return theme; // retain speech-only and older playlist behavior
   soundBoundary++;
   // At least one theme boundary between added sounds, and at least three
   // intervening eligible boundaries before the same sound can recur.
   if (previousBoundaryHadCue) { previousBoundaryHadCue = false; return theme; }
-  for (const name of soundChoices(track)) {
+  for (const name of contextualSoundChoices(track, station)) {
     const id = "station-sound-" + name;
     const candidate = available.find(t => t.id === id);
     if (!candidate || soundBoundary - (lastCueBoundary.get(id) ?? -Infinity) < 4) continue;
@@ -1515,10 +1634,9 @@ function paintPostMode() {
   button.title=postModeHelp[postMode]+". activate to cycle post mode.";
   button.disabled=!program || !program.posts.length;
   const next=byId("next"), label=next.querySelector(".next-label");
-  const text=postMode==="void"?"next segment":"next post";
-  if (label) label.textContent=text;
-  next.setAttribute("aria-label",text); next.title=text;
-  if (program) next.disabled=!started || (postMode!=="void" && !program.posts.length);
+  if (label) label.textContent="next";
+  next.setAttribute("aria-label","next reading"); next.title="next reading · scheduled breaks keep their own timing";
+  if (program) next.disabled=!started || !(postMode!=="void" && program.posts.length || hostPool.some(isManualReading) || storyPool.length);
 }
 function setPostMode(mode) {
   if (!postModes.includes(mode)) mode="off";
@@ -1688,16 +1806,24 @@ function continueCueIntro(autoplay) {
 
 // Session-local editorial mix. No wall-clock sleep inference or persistent data.
 // Ratios are editorial targets; individual recordings and their lead-ins remain whole.
+// The initial ten minutes retain the original welcome mix. At ten listened
+// minutes step down to a host-led station, then taper posts to an occasional
+// presence. Sound/music is an editorial target, not a separate quota.
 const sessionTargets = [
-  [0, .45, .45, .10], [600, .45, .45, .10],
-  [1200, .30, .55, .15], [1800, .25, .60, .15],
-  [2400, .20, .65, .15]
+  [600, .20, .70, .10], [1200, .15, .70, .15],
+  [1800, .10, .75, .15], [2400, .07, .78, .15],
+  [3600, .06, .79, .15]
 ];
+const initialSessionTarget = [.45,.45,.10];
+const postDebtMin=-120, postDebtMax=1800;
 let sessionSeconds = 0, accountedSeconds = 0, postDebt = 0;
 let hostPool = [], lastHostId = null;
 let hostGroups = new Map(), hostCycle = [], lastHostGroup = null;
+let pooledReadingBag = null;
 let lastStoryBlock = -3;
-// Keep large collections from gaining airtime merely because they have more entries.
+// Preserve the nine editorial classifications, but draw their readings from one bag.
+const pooledReadingGroups = new Set(["chronicles-wisdom", "chronicles-history", "glimmer", "magnificence", "equestria", "harmony", "arcana", "corvid", "observatory"]);
+// These former family keys now serve as pacing slots, not selection quotas.
 const newReadingGroups = new Set(["chronicles-wisdom", "chronicles-history", "glimmer", "magnificence"]);
 function hostGroup(track) {
   const title = (track.title || "").toLowerCase();
@@ -1723,8 +1849,8 @@ function shuffledCopy(items) {
   return queue;
 }
 function refillHostCycle() {
-  // One turn per active family. Interleave new and established families where
-  // possible, rather than giving the four new collections four consecutive turns.
+  // Keep the same number and spacing of ordinary reading slots versus other
+  // host turns. Any of the nine reading slots draws from the same shuffled bag.
   const old = shuffledCopy([...hostGroups.keys()].filter(k=>!newReadingGroups.has(k)));
   const fresh = shuffledCopy([...hostGroups.keys()].filter(k=>newReadingGroups.has(k)));
   let useNew = lastHostGroup == null ? Math.random()<.5 : !newReadingGroups.has(lastHostGroup);
@@ -1768,7 +1894,9 @@ let storyPool = [], storyCursor = 0, storiesStarted = 0, storyDebt = 0;
 let seriesNext = storyOrder[0];
 function validSeriesNext(value) { return value === "complete" || storyIds.has(value); }
 function syncStoryCursor() {
-  const index = seriesNext === "complete" ? storyOrder.length : storyOrder.indexOf(seriesNext);
+  // Migrate the completed marker from older releases to a new cycle.
+  if (seriesNext === "complete") seriesNext = storyOrder[0];
+  const index = storyOrder.indexOf(seriesNext);
   const next = storyPool.findIndex(t=>storyOrder.indexOf(t.id)===index);
   storyCursor = next < 0 ? storyPool.length : next;
 }
@@ -1779,7 +1907,7 @@ function completeStory(track) {
     seriesNext=record.prefs.seriesNext; syncStoryCursor();
   }
   if (!isStory(track) || track.id !== seriesNext || !storyPool.includes(track)) return;
-  seriesNext=storyOrder[storyOrder.indexOf(track.id)+1] || "complete";
+  seriesNext=storyOrder[(storyOrder.indexOf(track.id)+1)%storyOrder.length];
   syncStoryCursor(); rememberSavePreferences({seriesNext}); dialsPaint();
 }
 function loadSeriesProgress(record) {
@@ -1794,11 +1922,11 @@ function loadSeriesProgress(record) {
   }
   syncStoryCursor();
   // Migrate once, before a fresh-start policy can discard the old bookmark.
-  if (record && !validSeriesNext(record.prefs?.seriesNext)) rememberSavePreferences({seriesNext});
+  if (record && record.prefs?.seriesNext !== seriesNext) rememberSavePreferences({seriesNext});
 }
 // Target fraction of Astra's spoken airtime, not total station airtime.
 // At ten minutes the story becomes eligible; later targets ramp continuously.
-const storyTargets = [[600,.12],[1200,.20],[2400,.27],[3600,.30]];
+const storyTargets = [[600,.08],[1200,.10],[2400,.14],[3600,.15]];
 function storyTarget(seconds) {
   if (seconds < 600) return 0;
   for (let i=1;i<storyTargets.length;i++) {
@@ -1820,7 +1948,7 @@ function accountStory(delta, start, track) {
 }
 function chooseStory() {
   if (sessionSeconds < 600 || !storyPool.length || storyCursor >= storyPool.length ||
-      hostBlocks < 3 || hostBlocks - lastStoryBlock < 3) return null;
+      hostBlocks < 3 || (storiesStarted && hostBlocks - lastStoryBlock < 5)) return null;
   const track=storyPool[storyCursor];
   // Give the first story a natural entrance after ten minutes. Thereafter keep
   // whole episodes and use airtime debt rather than random short-track counts.
@@ -1829,6 +1957,7 @@ function chooseStory() {
 const postKinds = new Set(["post_intro", "post", "attachment_notice"]);
 const soundKinds = new Set(["music", "station_sound", "audio_excerpt", "sendoff_music"]);
 function sessionTarget(seconds) {
+  if (seconds < sessionTargets[0][0]) return initialSessionTarget.slice();
   for (let i = 1; i < sessionTargets.length; i++) {
     const a = sessionTargets[i-1], b = sessionTargets[i];
     if (seconds <= b[0]) {
@@ -1837,6 +1966,25 @@ function sessionTarget(seconds) {
     }
   }
   return sessionTargets[sessionTargets.length-1].slice(1);
+}
+// Split at every target boundary, including the ten-minute step, so a long
+// recording crossing that boundary is not charged wholly at the new rate.
+function desiredPostSeconds(start, delta) {
+  const end=start+delta;
+  let desired=0, a=start;
+  for (const b of [...sessionTargets.map(t=>t[0]).filter(t=>t>a&&t<end),end]) {
+    const [posts,host]=sessionTarget((a+b)/2);
+    desired+=(b-a)*posts/(posts+host); a=b;
+  }
+  return desired;
+}
+function sessionLimits(manual=false) {
+  if (sessionSeconds < 600) return [3,3];
+  const [posts,host]=sessionTarget(sessionSeconds);
+  // Do not force a blog after a fixed number of short host readings. Actual
+  // listened airtime governs the late mix. Manual browsing retains a bounded
+  // host streak so repeated Next without listening can still reach a blog.
+  return [1,manual?Math.max(4,Math.ceil(2*host/posts)):Infinity];
 }
 function accountPlayback() {
   if (!current || !audio.played) return;
@@ -1849,13 +1997,14 @@ function accountPlayback() {
   }
   const delta = Math.max(0, total-accountedSeconds);
   accountedSeconds = Math.max(accountedSeconds, total);
-  const [posts, host] = sessionTarget(sessionSeconds+delta/2);
+  const desired=desiredPostSeconds(sessionSeconds,delta);
   accountStory(delta,sessionSeconds,current);
   sessionSeconds += delta;
   if (postMode!=="void" && !soundKinds.has(current.kind) && !isDress(current) && !isSendoffIntro(current)) {
-    // A bounded running error prevents a single long track from monopolizing later choices.
-    const desired = posts/(posts+host);
-    postDebt = Math.max(-120, Math.min(120, postDebt + delta*((postKinds.has(current.kind) ? 1 : 0)-desired)));
+    // Keep enough positive debt to account for long blog readings at a low
+    // target share. Bound negative debt so missed posts cannot build a backlog.
+    const ceiling=sessionSeconds<600?120:postDebtMax;
+    postDebt = Math.max(postDebtMin, Math.min(ceiling, postDebt + (postKinds.has(current.kind)?delta:0)-desired));
   }
 }
 function setupSessionMix() {
@@ -1868,18 +2017,39 @@ function setupSessionMix() {
     if (!hostGroups.has(key)) hostGroups.set(key,{items:[],queue:[],last:null});
     hostGroups.get(key).items.push(track);
   }
+  pooledReadingBag = makeRateUpBag(hostPool.filter(t=>pooledReadingGroups.has(hostGroup(t))));
   sessionMix = Boolean(program.cadence.break_every && program.posts.length &&
     (hostPool.filter(t => !soundKinds.has(t.kind)).length >= 4 || (storyPool.length && hostPool.some(t=>!soundKinds.has(t.kind)))));
 }
-function takeHostBlock() {
+// The catalogue uses "intermission" for custom Astra readings as well as
+// station breaks. Manual Next targets readings, not scheduled station material.
+function isManualReading(track) {
+  return track?.kind === "intermission" && track.id.startsWith("custom-") &&
+    !isDress(track) && !isAside(track) && !isSegue(track) && !isSendoffIntro(track);
+}
+function takeHostBlock(manual=false) {
   const story = chooseStory();
-  if (story) return story;
+  if (story && (!manual || story !== current)) return story;
   if (!hostCycle.length) refillHostCycle();
+  // A manual skip never consumes the station/audio/extended-break family turns.
+  // If only those turns remain, append another round of ordinary reading turns;
+  // the scheduled families stay pending for natural completion boundaries.
+  const readingFamily=key=>hostGroups.get(key)?.items.every(isManualReading);
+  if (manual && !hostCycle.some(readingFamily)) {
+    const regular=shuffledCopy([...hostGroups.keys()].filter(readingFamily));
+    if (regular.length>1 && regular[0]===lastHostGroup) [regular[0],regular[1]]=[regular[1],regular[0]];
+    hostCycle.push(...regular);
+  }
   // Audio-only excerpts should never stack on a preceding sound or excerpt.
   // Keep the skipped family in the round for its next eligible boundary.
-  const index=hostCycle.findIndex(key=>key!=="audio" || !soundKinds.has(current?.kind));
+  const index=hostCycle.findIndex(key=>manual?readingFamily(key):key!=="audio" || !soundKinds.has(current?.kind));
   if (index<0) return null;
   const key=hostCycle.splice(index,1)[0], group=hostGroups.get(key);
+  if (pooledReadingGroups.has(key)) {
+    const track=pooledReadingBag();
+    lastHostId=track.id; lastHostGroup=key; // slot key only, not the track identity
+    return track;
+  }
   if (!group.queue.length) {
     group.queue=shuffledCopy(group.items);
     if (group.queue.length>1 && group.queue[0].id===group.last)
@@ -1903,7 +2073,7 @@ function sessionAside() {
   return chosen;
 }
 // In void mode, host blocks continue without the normal post debt/streak cap.
-// The same family bags, story position, asides and timed specials remain in charge.
+// The same shared reading bag, other family bags, story position, asides and timed specials remain in charge.
 function pauseVoid(text) {
   ++attempt; playing=false; audio.pause(); message(text); paintControls();
 }
@@ -1925,9 +2095,7 @@ function continueVoid(autoplay) {
 }
 function continueSession(afterPost = false) {
   if (postMode==="void") { takePost(true); return; }
-  const early = sessionSeconds < 1200;
-  const maxPosts = early ? 3 : 2;
-  const maxHost = early ? 3 : 4;
+  const [maxPosts,maxHost]=sessionLimits();
   // Asides can arrive at a completed post or host boundary throughout a
   // session. They never interrupt speech, an attachment notice or a cue frame.
   const aside=sessionAside();
@@ -1961,17 +2129,20 @@ function setupSegues() {
   }
 }
 
-function playIntermission(track, autoplay=true) {
+function playIntermission(track, autoplay=true, manual=false) {
   if (isSendoff(track) || isSendoffIntro(track)) return; // scheduled radio only
   if (isDress(track)) { startDress(track); return; }
   if (isStory(track)) {
     // Explicit library selection can jump to an episode. Automatic play never
-    // shuffles the story or loops it after the final episode in this session.
+    // shuffles the story; a completed finale wraps to episode one.
     const i = storyPool.findIndex(t=>t.id===track.id);
     if (i >= 0) storiesStarted++;
     lastHostId=track.id; lastStoryBlock=hostBlocks+1;
   }
   if (sessionMix || postMode==="void") { hostBlocks++; hostStreak++; postStreak = 0; }
+  // Next goes straight to speech. Natural completion may still play the normal
+  // closing sound; do not spend an opening cue or segue on a manual skip.
+  if (manual) { show(track,autoplay); return; }
   // Only known research passages need a spoken introduction. Station IDs,
   // prayers (which introduce themselves), and asides are left alone.
   const group = Object.hasOwn(passageGroups, track.id) ? passageGroups[track.id] : null;
@@ -1998,6 +2169,63 @@ function asideAfterReading() {
     nextAsideAt = completions + 2 + Math.floor(Math.random() * 2);
   }
   return chosen;
+}
+
+// Shared ordinary-reading rate-up. One ticket per recording, plus a second
+// for Starlight and Trixie. Tickets are references, not duplicate tracks.
+// Keep the other shuffle bags and the editorial pacing slots unchanged.
+function makeRateUpBag(items) {
+  const byTrack = new Map(items.map(t=>[t.id,t]));
+  const unique = [...byTrack.values()];
+  const bonus = unique.filter(t=>["glimmer","magnificence"].includes(hostGroup(t)));
+  const tickets = [...unique,...bonus];
+  const limits = new Map(unique.map(t=>[t.id,bonus.includes(t)?2:1]));
+  let queue = [], previous = null;
+  const separated = order => order.every((t,i)=>t.id!==(i?order[i-1].id:previous));
+  const refill = () => {
+    // Rejection sampling keeps the shuffled ticket order random, except for
+    // adjacent duplicate recordings (including across cycle boundaries).
+    for (let attempt=0;attempt<32;attempt++) {
+      const candidate=shuffledCopy(tickets);
+      if (separated(candidate)) return candidate;
+    }
+    // Bounded fallback: insert bonus tickets into random nonmatching gaps.
+    // An exceptionally small/incomplete catalogue may not permit separation.
+    const order=shuffledCopy(unique);
+    if (order.length>1 && order[0].id===previous) [order[0],order[1]]=[order[1],order[0]];
+    for (const t of shuffledCopy(bonus)) {
+      const gaps=[];
+      for (let i=0;i<=order.length;i++)
+        if ((i?order[i-1].id:previous)!==t.id && order[i]?.id!==t.id) gaps.push(i);
+      order.splice(gaps.length?gaps[Math.floor(Math.random()*gaps.length)]:order.length,0,t);
+    }
+    return order;
+  };
+  const take = () => {
+    if (!tickets.length) return null;
+    if (!queue.length) queue=refill();
+    const item=queue.shift(); previous=item.id; return item;
+  };
+  take.snapshot = () => ({rateUp:2,queue:queue.map(t=>t.id),last:previous});
+  take.restore = value => {
+    if (!value || !Array.isArray(value.queue)) return;
+    previous=byTrack.has(value.last)?value.last:null;
+    queue=[];
+    // Pre-rate-up bookmarks begin a new weighted cycle, not an old quota.
+    if (value.rateUp!==2 || value.queue.length>2000) return;
+    const restored=[],counts=new Map();
+    for (const id of value.queue) {
+      if (!byTrack.has(id)) continue;
+      const n=(counts.get(id)||0)+1;
+      if (n>limits.get(id)) return;
+      counts.set(id,n); restored.push(byTrack.get(id));
+    }
+    // Removing unavailable tracks may invalidate adjacency; safely start a
+    // fresh cycle in that case. A one-recording catalogue cannot separate.
+    if (unique.length>2 && !separated(restored)) return;
+    queue=restored;
+  };
+  return take;
 }
 
 // A shuffle bag plays each member once before repeating it. Separate bags
@@ -2107,7 +2335,7 @@ function parseProgram(manifest) {
       index.set(track.post_id, track);
     }
     if (track.kind === "station_sound") {
-      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...dressSoundPalette, ...legacyDressSoundPalette].find(s => s.id === track.id && s.sha === track.audio_sha256);
+      const expected = [...stationSoundPalette, ...introSoundPalette, ...expansionSoundPalette, ...expansionIntroPalette, ...auditionSoundPalette, ...auditionIntroPalette, ...dressSoundPalette, ...legacyDressSoundPalette].find(s => s.id === track.id && s.sha === track.audio_sha256);
       const legacyTitle = track.id === "station-sound-magnificence" ? "magnificence" :
         track.id === "station-sound-magnificence-intro" ? "magnificence intro" : null;
       check(expected && (track.title === expected.title || (legacyTitle !== null && track.title === legacyTitle)) && track.duration === expected.duration &&
@@ -2160,12 +2388,15 @@ function parseProgram(manifest) {
   const shortIds = groups.get("short_id");
   const music = groups.get("music");
   const sounds = stationSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
-  const introSounds = new Map(groups.get("station_sound").filter(t => [...introSoundPalette, ...expansionIntroPalette].some(s => s.id === t.id)).map(t => [t.id, t]));
+  const introSounds = new Map(groups.get("station_sound").filter(t => [...introSoundPalette, ...expansionIntroPalette, ...auditionIntroPalette].some(s => s.id === t.id)).map(t => [t.id, t]));
   const baseIntroCount = introSoundPalette.filter(s => introSounds.has(s.id)).length;
   const expandedIntroCount = expansionIntroPalette.filter(s => introSounds.has(s.id)).length;
   const expansionSounds = expansionSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
   check(!baseIntroCount || (baseIntroCount === introSoundPalette.length && sounds.length === stationSoundPalette.length && music.length === 1));
   check(!(expansionSounds.length || expandedIntroCount) || (expansionSounds.length === expansionSoundPalette.length && expandedIntroCount === expansionIntroPalette.length && baseIntroCount === introSoundPalette.length && sounds.length === stationSoundPalette.length && music.length === 1));
+  const auditionSounds = auditionSoundPalette.map(s => groups.get("station_sound").find(t => t.id === s.id)).filter(Boolean);
+  const auditionIntroCount = auditionIntroPalette.filter(s => introSounds.has(s.id)).length;
+  check(!(auditionSounds.length || auditionIntroCount) || (auditionSounds.length === auditionSoundPalette.length && auditionIntroCount === auditionIntroPalette.length && expansionSounds.length === expansionSoundPalette.length && music.length === 1));
   const originalSounds = sounds.filter(t => originalSoundPalette.some(s => s.id === t.id));
   const solfeggioSounds = sounds.filter(t => solfeggioSoundPalette.some(s => s.id === t.id));
   // Accept complete older v1 programs too (e.g. an in-flight old playlist). Reject partial groups.
@@ -2196,7 +2427,7 @@ function parseProgram(manifest) {
     check(Number.isFinite(cadence.feature_after_reading_seconds) && cadence.feature_after_reading_seconds > 0);
   if (posts.length && breaks.length && cadence.break_every) check(breaks[0].announcement_text === friendshipWords);
   return {opening:stations[0], posts, breaks, ordinaryBreaks, stories, asides, segues, features:groups.get("feature_intermission"),
-    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, expansionSounds, introSounds, excerpts, cadence, dress, dressCatalogue, dressSounds, sendoff, sendoffIntro};
+    shortId:shortIds[0], music:music[0], sounds:originalSounds, solfeggioSounds, expansionSounds, auditionSounds, introSounds, excerpts, cadence, dress, dressCatalogue, dressSounds, sendoff, sendoffIntro};
 }
 
 function arrange(after = -1, omitCurrent = false) {
@@ -2357,14 +2588,14 @@ function failed() {
   }
   // Avoid falling back to a blog reading or infinitely cycling through failed
   // host files when posts are voided. Keep the existing framed recovery above.
-  if (postMode==="void") { pauseVoid("this recording could not play. try again or choose next segment."); return; }
+  if (postMode==="void") { pauseVoid("this recording could not play. try again or choose next."); return; }
   if (["music", "station_sound", "audio_excerpt", "sendoff_music", "intermission", "feature_intermission", "short_id"].includes(current.kind)) {
     const autoplay = playing;
     takePost(autoplay);
     message("the break was unavailable. continuing with the next post.");
   } else {
     playing = false;
-    message("this recording could not play. try again or choose next post.");
+    message("this recording could not play. try again or choose next.");
     paintControls();
   }
 }
@@ -2409,6 +2640,14 @@ const stationSoundLabels = Object.freeze({
   "through-the-portal": "dimensional sound",
   "corvid-sanctuary": "resonant sound",
   "cosmic-garden": "soft celestial sound",
+  "violet-reverie": "crystalline sound",
+  "crystal-snowfall": "crystalline sound",
+  "velvet-curtain": "great and powerful sound",
+  "silver-flourish": "great and powerful sound",
+  "moonlit-pages": "ambient sound",
+  "everfree-twilight": "woodland sound",
+  "echoes-of-antiquity": "resonant sound",
+  "fourth-dimensional-signal": "dimensional sound",
   "dress": "crystalline sound",
   "dress-outro": "crystalline sound"
 });
@@ -2754,15 +2993,31 @@ byId("tune").addEventListener("click", () => {
     rememberSave(true);
   }
 });
-byId("next").addEventListener("click", () => {
+function nextReading() {
   if (!started || !program) return;
-  if (postMode==="void") {
-    chosenFirst=null;
-    const autoplay=playing;
-    if (autoplay && !dressFrame && !sendoffFrame && (maybeSendoff() || maybeDress())) return;
-    continueVoid(autoplay);
-  } else if (program.posts.length) takePost(playing);
-});
+  const autoplay=playing;
+  accountPlayback();
+  // A skip is not a natural completion: never advance seriesNext, count a
+  // completed post, trigger timed features, or replay the rest of a special.
+  // Leave both due clocks exactly where the original schedule placed them.
+  const pending=cueFrame?.intro === current ? cueFrame.passage : isSegue(current) ? pendingPassage : null;
+  dressFrame=null; sendoffFrame=null; cueFrame=null; pendingPassage=null;
+  if (postMode==="void") chosenFirst=null;
+  // A sound/segue immediately preceding an already selected ordinary reading
+  // can be skipped directly to that reading without consuming another turn.
+  if (isManualReading(pending)) { show(pending,autoplay); return; }
+  const canPost=postMode!=="void" && program.posts.length>0;
+  if (canPost && chosenFirst!==null) { takePost(autoplay); return; }
+  const [maxPosts,maxHost]=sessionLimits(true);
+  const wantHost=!hostBlocks || postStreak>=maxPosts || (hostStreak<maxHost && postDebt>=0);
+  if (!canPost || (sessionMix && wantHost && hostStreak<maxHost && current!==program.opening)) {
+    const track=takeHostBlock(true);
+    if (track) { playIntermission(track,autoplay,true); return; }
+  }
+  if (canPost) { takePost(autoplay); return; }
+  pauseVoid("no ordinary readings are available in this release. choose a recording or change post mode.");
+}
+byId("next").addEventListener("click", nextReading);
 byId("shuffle").addEventListener("click", () => {
   if (!program || !program.posts.length) return;
   setPostMode(postModes[(postModes.indexOf(postMode)+1)%3]);
@@ -2786,12 +3041,12 @@ audio.addEventListener("loadedmetadata", tick);
 // One optional, device-local consent record for playback, favorites and shuffle.
 // Keep the v1 storage key and bookmark shape stable across releases. No preference writes before consent.
 const rememberKey = "nudisco.radio.remember.v1";
-let dialsMode="automatic", dialsIdle=4, dialsMax=12, dialsLastActivity=0;
+let dialsMode="automatic", dialsIdle=8, dialsMax=24, dialsLastActivity=0;
 const dialsModes=["automatic","fresh","resume"], dialsIdleOptions=[1,2,4,8,12,24], dialsMaxOptions=[4,8,12,24,48];
 function dialsPrefs(prefs) {
   return {scheduleMode:dialsModes.includes(prefs?.scheduleMode)?prefs.scheduleMode:"automatic",
-    idleHours:dialsIdleOptions.includes(prefs?.idleHours)?prefs.idleHours:4,
-    maxHours:dialsMaxOptions.includes(prefs?.maxHours)?prefs.maxHours:12};
+    idleHours:dialsIdleOptions.includes(prefs?.idleHours)?prefs.idleHours:8,
+    maxHours:dialsMaxOptions.includes(prefs?.maxHours)?prefs.maxHours:24};
 }
 function dialsShouldRestart(mark, now=Date.now()) {
   if (!mark) return false;
@@ -2812,8 +3067,8 @@ function dialsPaint() {
   byId("dials-timing").hidden=dialsMode!=="automatic";
   byId("dials-mode-help").textContent={automatic:"restart a stale schedule without losing series progress.",fresh:"start at the station opening each time you reopen the radio.",resume:"continue from your saved broadcast position."}[dialsMode];
   const series=byId("dials-series");
-  const completed=seriesNext==="complete"?storyOrder.length:Math.max(0,storyOrder.indexOf(seriesNext));
-  series.textContent=!program?"finding the series…":seriesNext==="complete"?"series complete · "+storyOrder.length+" of "+storyOrder.length:!storyPool[storyCursor]?"next episode is unavailable in this release":`${completed} of ${storyOrder.length} episodes completed · next: ${storyPool[storyCursor].title.replace(/^astra\s*·\s*/i,"")}`;
+  const completed=Math.max(0,storyOrder.indexOf(seriesNext));
+  series.textContent=!program?"finding the series…":!storyPool[storyCursor]?"next episode is unavailable in this release":`${completed} of ${storyOrder.length} episodes completed · next: ${storyPool[storyCursor].title.replace(/^astra\s*·\s*/i,"")}`;
   byId("dials-pins").hidden=!dressPinned;
 }
 function dialsSet() {
@@ -2951,6 +3206,7 @@ function rememberSave(force = false, offset = null) {
     breakNumber, featureNumber, readingSecondsSinceFeature, readingSecondsSinceBreak, mixedSlot, classicSlot,
     lastAside, nextAsideAt, storyCursor, storiesStarted, storyDebt, lastHostId,
     rotation: {cycle:hostCycle, lastGroup:lastHostGroup,
+      readings:pooledReadingBag?.snapshot() ?? null,
       groups:[...hostGroups].map(([key,g])=>[key,{queue:g.queue.map(t=>t.id),last:g.last}]),
       lastStoryBlock, nextSessionAsideAt,
       lastSessionAsideSeconds:Number.isFinite(lastSessionAsideSeconds)?lastSessionAsideSeconds:null,
@@ -2993,7 +3249,7 @@ function rememberRestore(mark) {
   if (postMode==="on" && (mark.postMode==="on" || (!mark.postMode && mark.shuffled === true)) && Array.isArray(mark.shuffleRemaining) && mark.shuffleRemaining.length <= 2000 && track.id === mark.id) {
     shuffledOrder = [...new Set(mark.shuffleRemaining.map(idx).filter(i=>i>=0))]; shuffleCursor = 0;
   }
-  sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,-120,120);
+  sessionSeconds=num(mark.sessionSeconds); postDebt=num(mark.postDebt,postDebtMin,postDebtMax);
   sendoffNextAt=Number.isFinite(mark.sendoffNextAt)?num(mark.sendoffNextAt,1440,1e9):1440;
   if (isSendoff(track) || isSendoffIntro(track)) {
     const resume=mark.sendoffFrame?.resume;
@@ -3019,6 +3275,11 @@ function rememberRestore(mark) {
   syncStoryCursor(); storiesStarted=integer(mark.storiesStarted); storyDebt=num(mark.storyDebt,-1800,1800);
   lastHostId=typeof mark.lastHostId === "string" && get(mark.lastHostId) ? mark.lastHostId : null;
   const rotation=mark.rotation;
+  // Earlier family-specific and unweighted bags begin a fresh rate-up cycle,
+  // avoiding the last known pooled reading. Rate-up bookmarks resume their
+  // remaining tickets, including the empty end-of-cycle state.
+  pooledReadingBag?.restore({queue:[],last:lastHostId});
+  pooledReadingBag?.restore(rotation?.readings);
   if (rotation && typeof rotation==="object") {
     if (Array.isArray(rotation.cycle) && rotation.cycle.length<=hostGroups.size)
       hostCycle=[...new Set(rotation.cycle.filter(key=>hostGroups.has(key)))];
@@ -3027,7 +3288,7 @@ function rememberRestore(mark) {
       for (const item of rotation.groups) {
         if (!Array.isArray(item) || item.length!==2) continue;
         const [key,state]=item, g=hostGroups.get(key);
-        if (!g || !state || !Array.isArray(state.queue) || state.queue.length>2000) continue;
+        if (!g || pooledReadingGroups.has(key) || !state || !Array.isArray(state.queue) || state.queue.length>2000) continue;
         g.queue=[...new Set(state.queue.map(get).filter(t=>g.items.includes(t)))];
         g.last=g.items.some(t=>t.id===state.last)?state.last:null;
       }
@@ -3038,10 +3299,10 @@ function rememberRestore(mark) {
     asideBag?.restore(rotation.asides);
   } else {
     // Existing opt-in bookmarks still restore the same recording and position.
-    // A pre-upgrade global bag can seed the new family bags where available.
+    // A pre-upgrade global bag can seed the remaining independent family bags.
     if (Array.isArray(mark.hostQueue) && mark.hostQueue.length<=2000) {
       const remaining=[...new Set(mark.hostQueue.map(get).filter(t=>hostPool.includes(t)))];
-      for (const g of hostGroups.values()) g.queue=remaining.filter(t=>g.items.includes(t));
+      for (const [key,g] of hostGroups) if (!pooledReadingGroups.has(key)) g.queue=remaining.filter(t=>g.items.includes(t));
     }
     lastStoryBlock=storiesStarted?hostBlocks:-3;
     nextSessionAsideAt=hostBlocks+completions+2;
