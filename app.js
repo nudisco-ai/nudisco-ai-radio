@@ -173,6 +173,15 @@
     const handlers={play:()=>{if(current&&!playing)$('tune').click();},pause:()=>{if(playing)$('tune').click();},nexttrack:()=>{if(program&&started)$('next').click();},seekbackward:d=>{if(validDuration())audio.currentTime=Math.max(0,audio.currentTime-(d.seekOffset||15));},seekforward:d=>{if(validDuration())audio.currentTime=Math.min(audio.duration,audio.currentTime+(d.seekOffset||15));},seekto:d=>{if(validDuration()&&Number.isFinite(d.seekTime))audio.currentTime=Math.max(0,Math.min(audio.duration,d.seekTime));}};
     for(const [action,fn] of Object.entries(handlers))try{navigator.mediaSession.setActionHandler(action,fn);}catch{}
   }
-  if('serviceWorker' in navigator && ['http:','https:'].includes(location.protocol))navigator.serviceWorker.register('app-sw.js',{scope:'./app.html'}).catch(()=>{});
+  // No new service worker or offline cache. Retire the previous Radio-only worker.
+  if ('serviceWorker' in navigator) (async()=>{
+    try {
+      const scope = new URL('app.html',location.href).href;
+      const script = new URL('app-sw.js',location.href).href;
+      const registration = await navigator.serviceWorker.getRegistration(scope);
+      if (registration?.scope === scope && [registration.active,registration.waiting,registration.installing].filter(Boolean).every(w=>w.scriptURL===script)) await registration.unregister();
+    } catch {}
+    try { if ('caches' in window) await Promise.all((await caches.keys()).filter(k=>/^nudisco-radio-app-shell-v\d+$/.test(k)).map(k=>caches.delete(k))); } catch {}
+  })();
   update();
 })();

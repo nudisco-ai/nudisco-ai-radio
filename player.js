@@ -3161,7 +3161,7 @@ function offlinePlaylist() {
 async function load() {
   try {
     const manifest = location.protocol === "file:" ? await offlinePlaylist() :
-      await fetch("playlist.json", {cache: "no-cache"}).then(response => {
+      await fetch("playlist.json", {cache: "no-store", credentials: "omit"}).then(response => {
         if (!response.ok) throw new Error("playlist unavailable");
         return response.json();
       });

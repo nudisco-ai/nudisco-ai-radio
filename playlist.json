@@ -67,12 +67,12 @@
       "announcement_text": "the next post is SURPRISE!! it includes an attachment.",
       "attachments": [
         {
-          "kind": "label",
-          "value": "Flutterpie Friday Fluttershy Friday GIF - Flutterpie friday Fluttershy friday Pinkie pie friday"
+          "kind": "unknown",
+          "value": null
         }
       ],
-      "audio_sha256": "1562f738845d5c8e9588c4f139a59715e7610ea2d1137d6d4dd9bcb93a3e943e",
-      "audio_url": "audio/0f3e5ada7d8b9c5f3d6c207ca4f645cc0f4d2d8041e1372c9231e64d0f1a29c9.mp3",
+      "audio_sha256": "d7c5d3179e1f39f90514cf5d4383d23464bebefd01d11bef2a19a9cd92a58354",
+      "audio_url": "audio/7135aaa3e1e80f10d7ca5507c67cff523afc43c5414e2406f301aca4947486fd.mp3",
       "content_hash": "cc179958c2203753b7a7382a67cde0c8c2d5325d693f4d1b18a54ae383070880",
       "date": "2026-11-27T04:42:44-08:00",
       "difficult_attachment": false,
@@ -89,8 +89,8 @@
     {
       "attachments": [
         {
-          "kind": "label",
-          "value": "Flutterpie Friday Fluttershy Friday GIF - Flutterpie friday Fluttershy friday Pinkie pie friday"
+          "kind": "unknown",
+          "value": null
         }
       ],
       "audio_sha256": "4b084741bacac7aac09c19c6ad2b1c082dfc6e9a7753ab3112bc1039c5f8be16",
@@ -218,19 +218,19 @@
       "title": "untitled post"
     },
     {
-      "announcement_text": "the next post is twilight thursday!! it includes an attachment labeled Twilight Sparkle Mlp Twilight GIF - Twilight sparkle Mlp twilight Mlp fim.",
+      "announcement_text": "the next post is twilight thursday!! it includes an attachment.",
       "attachments": [
         {
-          "kind": "label",
-          "value": "Twilight Sparkle Mlp Twilight GIF - Twilight sparkle Mlp twilight Mlp fim"
+          "kind": "unknown",
+          "value": null
         }
       ],
-      "audio_sha256": "ffbe695b466839b3130fda6483a5d8ad724526e5c9ece00213a1d6503b7d063a",
-      "audio_url": "audio/77a97e373e13a448c1d1a2800c167e91b193b950614e595d0f879765e06f90ba.mp3",
-      "content_hash": "ec6ade9bcf8c94520c02549c210685a127bf4c56de3d886a3e72c508f92263a1",
+      "audio_sha256": "b56be22a3cfefe978acf619ed24fd14c7a4439f6f164f4c5bc355eb83da6e5c4",
+      "audio_url": "audio/392d82dc79aa3b7d55fda868b16e84c2318287e764c2b00f3362d21051ad7d83.mp3",
+      "content_hash": "930182c893c8aaa77e4f06a344212ddca9513960d638a325cff6a76484513773",
       "date": "2026-11-26T05:11:45-08:00",
       "difficult_attachment": false,
-      "duration": 12.3793,
+      "duration": 4.8877,
       "edition": "regular",
       "has_title": true,
       "id": "intro:20261126-051145-twilight-thursday-5fd6",
@@ -243,8 +243,8 @@
     {
       "attachments": [
         {
-          "kind": "label",
-          "value": "Twilight Sparkle Mlp Twilight GIF - Twilight sparkle Mlp twilight Mlp fim"
+          "kind": "unknown",
+          "value": null
         }
       ],
       "audio_sha256": "020149b74f217f3d1775f54e7d23d48b64277cd9a75755e3428199023b264788",
@@ -716,19 +716,19 @@
       "title": "friend,"
     },
     {
-      "announcement_text": "next, an untitled post from november 24, 2026. it includes an attachment labeled Trixie Trixie Tuesday GIF - Trixie Trixie tuesday Tuesday.",
+      "announcement_text": "next, an untitled post from november 24, 2026. it includes an attachment.",
       "attachments": [
         {
-          "kind": "label",
-          "value": "Trixie Trixie Tuesday GIF - Trixie Trixie tuesday Tuesday"
+          "kind": "unknown",
+          "value": null
         }
       ],
-      "audio_sha256": "70460eeca459665828c020cb9861e2ac9c48044d52236cc6306b045395b1e779",
-      "audio_url": "audio/72d5afce3521e88aa9fa432e7d2ad17397db2f5964896845c46d47bcef478903.mp3",
-      "content_hash": "a2548b23183deaba1a8dc757d410814f01109ed1bc254f1224886407f85b6acc",
+      "audio_sha256": "547e390c7fb0aa8cc6eeca17d45ab6c78d7bbf5ab2ed31a9c5129042455698c8",
+      "audio_url": "audio/66aed0b7eb40a445e1284fb900d1727e650279e83c5a367af61306f3c9e0bd92.mp3",
+      "content_hash": "10eef3673f9883e550beda9048a83cb8da067ff6ba4b83e9a8ad41d13d1c4e4b",
       "date": "2026-11-24T05:29:24-08:00",
       "difficult_attachment": false,
-      "duration": 12.5727,
+      "duration": 8.0053,
       "edition": "regular",
       "has_title": false,
       "id": "intro:20261124-052924-be-well-friend-6959",
@@ -741,8 +741,8 @@
     {
       "attachments": [
         {
-          "kind": "label",
-          "value": "Trixie Trixie Tuesday GIF - Trixie Trixie tuesday Tuesday"
+          "kind": "unknown",
+          "value": null
         }
       ],
       "audio_sha256": "6dc989c34da28d7d82a8d360cff378402f3dd2d7b320cae9278d9440f0b348c2",
@@ -880,19 +880,19 @@
       "title": "untitled post"
     },
     {
-      "announcement_text": "next, an untitled post from november 23, 2026. it includes an attachment labeled Applejack Mlp Applejack GIF - Applejack Mlp applejack Mlp fim.",
+      "announcement_text": "next, an untitled post from november 23, 2026. it includes an attachment.",
       "attachments": [
         {
-          "kind": "label",
-          "value": "Applejack Mlp Applejack GIF - Applejack Mlp applejack Mlp fim"
+          "kind": "unknown",
+          "value": null
         }
       ],
-      "audio_sha256": "66c47053a7832b4307a4d06e7c2db63b6bc54c3e60945487ea00b729ee292a16",
-      "audio_url": "audio/1cd893185235605bb33773961b5eee97197e4a0047f322864b82aafcd7e56454.mp3",
-      "content_hash": "223e9fcb5a5741d78714346e26cf4a08f87a325af7fd92ff36d8e0ded9e001a9",
+      "audio_sha256": "f0667de11a81dad4068b1add8e981d8a11d553aaa83368ad10d5a08c8f6ab597",
+      "audio_url": "audio/377b1c91a2f68bc7ed65c5eea8d767351847bc7869cc09f587f3854d07c721d4.mp3",
+      "content_hash": "4b4a4937acb0e2909213c7b75bb20453b16d8422d2977301a99e7b300efeb6da",
       "date": "2026-11-23T01:18:48-08:00",
       "difficult_attachment": false,
-      "duration": 15.3217,
+      "duration": 7.9087,
       "edition": "regular",
       "has_title": false,
       "id": "intro:20261123-011848-getting-started-early-8922",
@@ -905,8 +905,8 @@
     {
       "attachments": [
         {
-          "kind": "label",
-          "value": "Applejack Mlp Applejack GIF - Applejack Mlp applejack Mlp fim"
+          "kind": "unknown",
+          "value": null
         }
       ],
       "audio_sha256": "44b59e9993c800fe5c23716227618a1355520537cd0d2e9239c45439373e0948",
@@ -1106,19 +1106,19 @@
       "title": "untitled post"
     },
     {
-      "announcement_text": "next, an untitled post from november 22, 2026. it includes an attachment labeled Rainbow Dash Mlp Rainbow Dash GIF - Rainbow dash Mlp rainbow dash Mlp fim.",
+      "announcement_text": "next, an untitled post from november 22, 2026. it includes an attachment.",
       "attachments": [
         {
-          "kind": "label",
-          "value": "Rainbow Dash Mlp Rainbow Dash GIF - Rainbow dash Mlp rainbow dash Mlp fim"
+          "kind": "unknown",
+          "value": null
         }
       ],
-      "audio_sha256": "da04143111cabc088cdd735d9d38f30c33970225dd91a277ecee413caec9b248",
-      "audio_url": "audio/b24a7269a5c4ad3b98fa2ffe583229eab092f9316806bb89e69856f9e1c827a2.mp3",
-      "content_hash": "b59ca95b0df7e159c417e3f7c7d4a220a10bc966e19e3694ea45e1461440baff",
+      "audio_sha256": "49ab1d5176aa9f6c288a1bee4e0417786cdfeeff94971e438fba14ac416107d3",
+      "audio_url": "audio/1c2027474360f036645910aa98c511fc0c459dd01e2c3f44ad42bb10d9578a6b.mp3",
+      "content_hash": "b60fa7dc4d2d040c7f0ce2721cf038deb3fe8c7a4b8574ca412de9a5dbcf93d2",
       "date": "2026-11-22T15:26:07-08:00",
       "difficult_attachment": false,
-      "duration": 15.429,
+      "duration": 7.8407,
       "edition": "regular",
       "has_title": false,
       "id": "intro:20261122-152607-rainbow-dash-sunday-0da1",
@@ -1131,8 +1131,8 @@
     {
       "attachments": [
         {
-          "kind": "label",
-          "value": "Rainbow Dash Mlp Rainbow Dash GIF - Rainbow dash Mlp rainbow dash Mlp fim"
+          "kind": "unknown",
+          "value": null
         }
       ],
       "audio_sha256": "0700b8ab14961e67822eab02bb4e377823e8f031bd17644f4e1eb2c87c475466",
