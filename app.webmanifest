@@ -1,7 +1,7 @@
 {
   "id": "./app.html",
   "name": "nudisco ai radio",
-  "short_name": "nudisco radio",
+  "short_name": "nudisco ai radio",
   "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
