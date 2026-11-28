@@ -28,6 +28,88 @@ window.NUDISCO_PLAYLIST = {
       "title": "station introduction"
     },
     {
+      "announcement_text": "published november 28, 2026, a post titled glimmers,. it includes an attachment.",
+      "attachments": [
+        {
+          "kind": "label",
+          "value": "Starlight Glimmer My Little Pony GIF - Starlight glimmer My little pony Saturday"
+        }
+      ],
+      "audio_sha256": "ef30bed4b3cf44a6c9eb6e9688e5779475337eb972a6c2b25ef0b8bbf0875b45",
+      "audio_url": "audio/cb7efba77d2314e289ecf6122ffdf569e7d20caed11c1f6d4481b6bd3574f127.mp3",
+      "content_hash": "9155b6a4d4c306c44b2a19a89689aa62445ce1460e2b8c4f6ae81db6bba2b6d2",
+      "date": "2026-11-28T03:29:09-08:00",
+      "difficult_attachment": false,
+      "duration": 7.9087,
+      "edition": "regular",
+      "has_title": true,
+      "id": "intro:20261128-032909-glimmers-cc8f",
+      "kind": "post_intro",
+      "post_id": "20261128-032909-glimmers-cc8f",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261128-032909-glimmers-cc8f",
+      "speed": 1.5,
+      "title": "glimmers,"
+    },
+    {
+      "attachments": [
+        {
+          "kind": "label",
+          "value": "Starlight Glimmer My Little Pony GIF - Starlight glimmer My little pony Saturday"
+        }
+      ],
+      "audio_sha256": "8b910a514fb3d6154a16079422f2b4abddb95bb226870ffb4d5b5e24f23e178c",
+      "audio_url": "audio/0e392b8a9ffd3bb7111c4db15a8ac71abf28d59ce6027f0c600129711216291c.mp3",
+      "authored_text": "it's starlight saturday!!!",
+      "content_hash": "9a2ce02953e07603b0e2d72b1710575fe24f98cdf1ec2b128f381b154798de29",
+      "date": "2026-11-28T03:29:09-08:00",
+      "difficult_attachment": false,
+      "duration": 2.1277,
+      "edition": "regular",
+      "has_title": true,
+      "id": "post:20261128-032909-glimmers-cc8f",
+      "kind": "post",
+      "post_id": "20261128-032909-glimmers-cc8f",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261128-032909-glimmers-cc8f",
+      "speed": 1.5,
+      "title": "glimmers,"
+    },
+    {
+      "announcement_text": "next, an untitled post from november 28, 2026.",
+      "attachments": [],
+      "audio_sha256": "4357fda8d3d9b32ebac356c428b1cd66614d4a0738ca2247caa12dae741c1cc1",
+      "audio_url": "audio/e52810a4b050eb7a31346a62e6a862ca1be35f98496c03c67f1cebf31ec7279e.mp3",
+      "content_hash": "fe7092f98f6f0ee6f9545f134fb5aa256e7c94853b793b48ff2ed38e33e08dea",
+      "date": "2026-11-28T03:14:02-08:00",
+      "difficult_attachment": false,
+      "duration": 5.872,
+      "edition": "regular",
+      "has_title": false,
+      "id": "intro:20261128-031402-dang-who-started-the-campaign-to-destroy-m-2288",
+      "kind": "post_intro",
+      "post_id": "20261128-031402-dang-who-started-the-campaign-to-destroy-m-2288",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261128-031402-dang-who-started-the-campaign-to-destroy-m-2288",
+      "speed": 1.5,
+      "title": "untitled post"
+    },
+    {
+      "attachments": [],
+      "audio_sha256": "3b79b082e2ee85af4b4cae67d1757ebec8cf04554a2623c318f954828debf11b",
+      "audio_url": "audio/d0fdef6387872a70cc433c8f64996a2e97091cdeffd84a2a7853460fd7cac31b.mp3",
+      "authored_text": "dang. who started the campaign to destroy my life?? was already bad, but wow.",
+      "content_hash": "3a793df0008e4cd2bae0a15ea5beaf1e0b0ab154257f43c693cfc5b248a0bf51",
+      "date": "2026-11-28T03:14:02-08:00",
+      "difficult_attachment": false,
+      "duration": 5.982,
+      "edition": "regular",
+      "has_title": false,
+      "id": "post:20261128-031402-dang-who-started-the-campaign-to-destroy-m-2288",
+      "kind": "post",
+      "post_id": "20261128-031402-dang-who-started-the-campaign-to-destroy-m-2288",
+      "source_url": "https://nudisco-ai.whoismister-e.workers.dev/post/20261128-031402-dang-who-started-the-campaign-to-destroy-m-2288",
+      "speed": 1.5,
+      "title": "untitled post"
+    },
+    {
       "announcement_text": "the next post is kind words.",
       "attachments": [],
       "audio_sha256": "a69fdaa2711556310587cf94e733db14adf29622e06cc88ec2de4e690d5d67ec",
